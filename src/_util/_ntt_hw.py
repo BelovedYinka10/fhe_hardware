@@ -40,6 +40,7 @@ def _load_lib() -> ctypes.CDLL:
     lib.ntt_engine_new.argtypes = [
         ctypes.c_uint64,   # q
         ctypes.c_uint64,   # n_inv
+        ctypes.c_uint64,   # barrett_m = floor(2^(2*Q_WIDTH) / q)
         U64P,              # fwd_table[N]
         U64P,              # inv_table[N]
         ctypes.c_int,      # table_size = N
@@ -83,6 +84,12 @@ class HW_NTT_Engine:
         self._n = n
         self._q = q
 
+        # Precompute Barrett constant: M = floor(2^(2*Q_WIDTH) / q)
+        # Q_WIDTH must match the Verilog compile-time parameter (40 in Makefile).
+        # Using q.bit_length() would be wrong for primes smaller than Q_WIDTH.
+        _Q_WIDTH = 40
+        self._barrett_m = (1 << (2 * _Q_WIDTH)) // q
+
         # Build the same twiddle tables as the Python engine
         g       = self._find_primitive_root(q)
         psi     = pow(g, (q - 1) // (2 * n), q)
@@ -107,7 +114,7 @@ class HW_NTT_Engine:
 
         lib = self._get_lib()
         self._handle = lib.ntt_engine_new(
-            q, self._n_inv,
+            q, self._n_inv, self._barrett_m,
             ctypes.cast(c_fwd, ctypes.POINTER(U64)),
             ctypes.cast(c_inv, ctypes.POINTER(U64)),
             n

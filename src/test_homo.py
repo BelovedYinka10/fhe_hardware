@@ -67,7 +67,7 @@ if __name__ == "__main__":
         print("(HW library not built — skipping HW verification)")
 
     #############################################
-    #                Circuit Test               #
+    #Circuit Test               #
     #############################################
     print("\n── Circuit Test ────────────────────────────")
     plain1 = encoder.coeff_encode([1, 1])

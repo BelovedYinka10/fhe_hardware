@@ -36,9 +36,11 @@ def _load_lib() -> ctypes.CDLL:
     #              uint64_t* fwd, uint64_t* inv, int n)
     lib.hv_new.restype  = ctypes.c_void_p
     lib.hv_new.argtypes = [
-        ctypes.c_uint64, ctypes.c_uint64,
-        U64P, U64P,
-        ctypes.c_int,
+        ctypes.c_uint64,   # q
+        ctypes.c_uint64,   # n_inv
+        ctypes.c_uint64,   # barrett_m = floor(2^(2*Q_WIDTH) / q)
+        U64P, U64P,        # fwd, inv twiddle tables
+        ctypes.c_int,      # n
     ]
 
     # void hv_free(void*)
@@ -103,9 +105,15 @@ class HW_HashVerifier:
             c_fwd = U64A(*[int(x) % prime for x in eng._tables])
             c_inv = U64A(*[int(x) % prime for x in eng._inv_tables])
 
+            # Barrett constant: M = floor(2^(2*Q_WIDTH) / prime)
+            # Q_WIDTH must match the Verilog compile-time parameter (40 in Makefile).
+            _Q_WIDTH = 40
+            barrett_m = (1 << (2 * _Q_WIDTH)) // prime
+
             handle = lib.hv_new(
                 prime,
                 int(eng._n_inv),
+                barrett_m,
                 ctypes.cast(c_fwd, ctypes.POINTER(U64)),
                 ctypes.cast(c_inv, ctypes.POINTER(U64)),
                 n,
