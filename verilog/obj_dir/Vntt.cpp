@@ -19,6 +19,7 @@ Vntt::Vntt(VerilatedContext* _vcontextp__, const char* _vcname__)
     , coeff_wr_addr{vlSymsp->TOP.coeff_wr_addr}
     , tw_wr_addr{vlSymsp->TOP.tw_wr_addr}
     , rd_addr{vlSymsp->TOP.rd_addr}
+    , barrett_m{vlSymsp->TOP.barrett_m}
     , q{vlSymsp->TOP.q}
     , n_inv{vlSymsp->TOP.n_inv}
     , coeff_wr_data{vlSymsp->TOP.coeff_wr_data}

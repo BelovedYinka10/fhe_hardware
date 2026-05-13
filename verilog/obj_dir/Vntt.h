@@ -38,6 +38,7 @@ class alignas(VL_CACHE_LINE_BYTES) Vntt VL_NOT_FINAL : public VerilatedModel {
     VL_IN16(&coeff_wr_addr,12,0);
     VL_IN16(&tw_wr_addr,13,0);
     VL_IN16(&rd_addr,12,0);
+    VL_INW(&barrett_m,79,0,3);
     VL_IN64(&q,39,0);
     VL_IN64(&n_inv,39,0);
     VL_IN64(&coeff_wr_data,39,0);

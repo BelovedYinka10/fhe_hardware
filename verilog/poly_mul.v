@@ -33,6 +33,7 @@ module poly_mul #(
     // ── Runtime modulus ─────────────────────────────────────────
     input  wire [Q_WIDTH-1:0]  q,
     input  wire [Q_WIDTH-1:0]  n_inv,      // N^{-1} mod q for INTT
+    input  wire [2*Q_WIDTH-1:0] barrett_m,  // floor(2^(2·Q_WIDTH) / q)
 
     // ── Operand A write port ─────────────────────────────────────
     input  wire                a_wr_en,
@@ -88,6 +89,7 @@ module poly_mul #(
         .rst_n         (rst_n),
         .q             (q),
         .n_inv         (n_inv),
+        .barrett_m     (barrett_m),
         .coeff_wr_en   (ntt_coeff_wr_en   | a_wr_en | b_wr_en),
         .coeff_wr_addr (ntt_coeff_wr_en ? ntt_coeff_wr_addr :
                         a_wr_en         ? a_wr_addr          :
@@ -110,13 +112,22 @@ module poly_mul #(
     // Expose NTT result RAM to the outside world.
     assign rd_data = ntt_rd_data;
 
-    // ── Modular multiply (behavioural) ───────────────────────────
-    function automatic [Q_WIDTH-1:0] mod_mul;
+    // ── Modular multiply — Barrett reduction (synthesizable) ─────
+    function [Q_WIDTH-1:0] mod_mul;
         input [Q_WIDTH-1:0] a, b, qq;
-        reg [2*Q_WIDTH-1:0] p, r;
+        reg [2*Q_WIDTH-1:0] p;
+        reg [4*Q_WIDTH-1:0] pm;
+        reg [Q_WIDTH:0]     t;
+        reg [2*Q_WIDTH-1:0] tq;
+        reg [2*Q_WIDTH-1:0] r;
         begin
-            p = {{Q_WIDTH{1'b0}}, a} * {{Q_WIDTH{1'b0}}, b};
-            r = p % {{Q_WIDTH{1'b0}}, qq};
+            p  = a * b;
+            pm = {{(2*Q_WIDTH){1'b0}}, p} * {{(2*Q_WIDTH){1'b0}}, barrett_m};
+            t  = pm[4*Q_WIDTH-1 : 2*Q_WIDTH];
+            tq = t * {1'b0, qq};
+            r  = p - tq;
+            if (r >= {{Q_WIDTH{1'b0}}, qq})
+                r = r - {{Q_WIDTH{1'b0}}, qq};
             mod_mul = r[Q_WIDTH-1:0];
         end
     endfunction

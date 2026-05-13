@@ -40,6 +40,11 @@ class alignas(VL_CACHE_LINE_BYTES) Vntt___024root final {
     SData/*12:0*/ ntt__DOT__ua;
     SData/*12:0*/ ntt__DOT__va;
     SData/*13:0*/ ntt__DOT__tw_idx;
+    VL_INW(barrett_m,79,0,3);
+    VlWide<3>/*79:0*/ ntt__DOT__mod_mul__Vstatic__p;
+    VlWide<5>/*159:0*/ ntt__DOT__mod_mul__Vstatic__pm;
+    VlWide<3>/*79:0*/ ntt__DOT__mod_mul__Vstatic__tq;
+    VlWide<3>/*79:0*/ ntt__DOT__mod_mul__Vstatic__r;
     IData/*31:0*/ __VactIterCount;
     VL_IN64(q,39,0);
     VL_IN64(n_inv,39,0);
@@ -49,6 +54,7 @@ class alignas(VL_CACHE_LINE_BYTES) Vntt___024root final {
     QData/*39:0*/ ntt__DOT__u_r;
     QData/*39:0*/ ntt__DOT__v_r;
     QData/*39:0*/ ntt__DOT__w_r;
+    QData/*40:0*/ ntt__DOT__mod_mul__Vstatic__t;
     QData/*39:0*/ ntt__DOT__gs_v;
     QData/*40:0*/ __VdfgRegularize_hebeb780c_0_0;
     QData/*40:0*/ __VdfgRegularize_hebeb780c_0_2;

@@ -11,7 +11,7 @@ Vntt__Syms::Vntt__Syms(VerilatedContext* contextp, const char* namep, Vntt* mode
     , TOP{this, namep}
 {
     // Check resources
-    Verilated::stackCheck(1622);
+    Verilated::stackCheck(3214);
     // Setup sub module instances
     // Configure time unit / time precision
     _vm_contextp__->timeunit(-9);

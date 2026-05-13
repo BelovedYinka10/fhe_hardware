@@ -25,6 +25,7 @@ Vhash_verifier::Vhash_verifier(VerilatedContext* _vcontextp__, const char* _vcna
     , ct_wr_addr{vlSymsp->TOP.ct_wr_addr}
     , r_wr_addr{vlSymsp->TOP.r_wr_addr}
     , tw_wr_addr{vlSymsp->TOP.tw_wr_addr}
+    , barrett_m{vlSymsp->TOP.barrett_m}
     , q{vlSymsp->TOP.q}
     , n_inv{vlSymsp->TOP.n_inv}
     , ct_wr_data{vlSymsp->TOP.ct_wr_data}

@@ -141,13 +141,30 @@ class alignas(VL_CACHE_LINE_BYTES) Vhash_verifier___024root final {
         SData/*12:0*/ __VdlyDim0__hash_verifier__DOT__u_ch__DOT__mem_r__v1;
         SData/*12:0*/ __VdlyDim0__hash_verifier__DOT__u_ch__DOT__mem_h__v0;
         SData/*12:0*/ __VdlyDim0__hash_verifier__DOT__u_ch__DOT__mem_h__v1;
+        VL_INW(barrett_m,79,0,3);
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p;
+        VlWide<5>/*159:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__pm;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__tq;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r;
+    };
+    struct {
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p;
+        VlWide<5>/*159:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p;
+        VlWide<5>/*159:0*/ hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__pm;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__tq;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p;
+        VlWide<5>/*159:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq;
+        VlWide<3>/*79:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r;
         IData/*31:0*/ __VactIterCount;
         VL_IN64(q,39,0);
         VL_IN64(n_inv,39,0);
         VL_IN64(ct_wr_data,39,0);
         VL_IN64(r_wr_data,39,0);
-    };
-    struct {
         VL_IN64(tw_wr_data,39,0);
         QData/*39:0*/ hash_verifier__DOT____Vlvbound_h957a2f4a__0;
         QData/*39:0*/ hash_verifier__DOT__ch_ct_wr_data;
@@ -166,15 +183,19 @@ class alignas(VL_CACHE_LINE_BYTES) Vhash_verifier___024root final {
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__pa_rd_data;
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_data;
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_rd_data;
+        QData/*40:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__t;
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__u_r;
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__v_r;
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__w_r;
+        QData/*40:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t;
         QData/*39:0*/ hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__gs_v;
         QData/*39:0*/ hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_data;
         QData/*39:0*/ hash_verifier__DOT__u_pmul__DOT__ntt_rd_data;
+        QData/*40:0*/ hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__t;
         QData/*39:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__u_r;
         QData/*39:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__v_r;
         QData/*39:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__w_r;
+        QData/*40:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t;
         QData/*39:0*/ hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__gs_v;
         QData/*40:0*/ __VdfgRegularize_hebeb780c_0_0;
         QData/*40:0*/ __VdfgRegularize_hebeb780c_0_2;
@@ -191,6 +212,8 @@ class alignas(VL_CACHE_LINE_BYTES) Vhash_verifier___024root final {
         VlUnpacked<VlUnpacked<VlUnpacked<QData/*39:0*/, 8192>, 3>, 3> hash_verifier__DOT__ct_mem;
         VlUnpacked<QData/*39:0*/, 8192> hash_verifier__DOT__h1;
         VlUnpacked<QData/*39:0*/, 8192> hash_verifier__DOT__h2;
+    };
+    struct {
         VlUnpacked<QData/*39:0*/, 8192> hash_verifier__DOT__h3;
         VlUnpacked<VlUnpacked<QData/*39:0*/, 8192>, 3> hash_verifier__DOT__u_ch__DOT__ct;
         VlUnpacked<QData/*39:0*/, 8192> hash_verifier__DOT__u_ch__DOT__mem_r;
@@ -212,8 +235,6 @@ class alignas(VL_CACHE_LINE_BYTES) Vhash_verifier___024root final {
         VlUnpacked<QData/*63:0*/, 1> __VstlTriggered;
         VlUnpacked<QData/*63:0*/, 1> __VicoTriggered;
         VlUnpacked<QData/*63:0*/, 1> __VactTriggered;
-    };
-    struct {
         VlUnpacked<QData/*63:0*/, 1> __VnbaTriggered;
     };
 

@@ -44,6 +44,7 @@ class alignas(VL_CACHE_LINE_BYTES) Vhash_verifier VL_NOT_FINAL : public Verilate
     VL_IN16(&ct_wr_addr,12,0);
     VL_IN16(&r_wr_addr,12,0);
     VL_IN16(&tw_wr_addr,13,0);
+    VL_INW(&barrett_m,79,0,3);
     VL_IN64(&q,39,0);
     VL_IN64(&n_inv,39,0);
     VL_IN64(&ct_wr_data,39,0);

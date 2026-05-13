@@ -7,10 +7,9 @@
 //
 // Architecture: one butterfly per 2-clock micro-cycle (READ→WRITE)
 //
-// IMPORTANT – modular multiply uses Verilog % operator.
-// This is BEHAVIOURAL and works in Verilator simulation.
-// For FPGA/ASIC synthesis, replace mod_mul with a Barrett or
-// Montgomery multiplier.
+// Modular multiply uses Barrett reduction (synthesizable).
+// barrett_m = floor(2^(2·Q_WIDTH) / q) must be precomputed and
+// supplied as a runtime input port.
 //
 // Parameters
 //   LOGN    : log2(N)  — polynomial degree N = 2^LOGN  (default 13)
@@ -26,6 +25,7 @@ module ntt #(
     // ── Runtime modulus ──────────────────────────────────────────
     input  wire [Q_WIDTH-1:0]    q,
     input  wire [Q_WIDTH-1:0]    n_inv,    // N^{-1} mod q (INTT only)
+    input  wire [2*Q_WIDTH-1:0]  barrett_m, // floor(2^(2·Q_WIDTH) / q)
 
     // ── Coefficient write port (load input polynomial) ───────────
     input  wire                  coeff_wr_en,
@@ -51,9 +51,10 @@ module ntt #(
 );
 
     // ── Constants ─────────────────────────────────────────────────
-    localparam integer N       = 1 << LOGN;
-    localparam integer K_MAX   = N/2 - 1;   // max butterfly index per stage
-    localparam integer S_MAX   = LOGN - 1;  // max stage index
+    localparam integer N         = 1 << LOGN;
+    localparam integer K_MAX     = N/2 - 1;   // max butterfly index per stage
+    localparam integer S_MAX     = LOGN - 1;  // max stage index
+    localparam integer BARRETT_K = 2 * Q_WIDTH;   // shift amount for Barrett
 
     // ── Memories ──────────────────────────────────────────────────
     reg [Q_WIDTH-1:0] coeff [0:N-1];        // coefficient RAM
@@ -131,14 +132,32 @@ module ntt #(
         end
     endfunction
 
-    // mod_mul : (a * b) mod q  [BEHAVIOURAL — Verilator only]
-    function automatic [Q_WIDTH-1:0] mod_mul;
+    // mod_mul : (a * b) mod q  — Barrett reduction (synthesizable)
+    //   barrett_m [2·Q_WIDTH-1:0] is read from the module input port.
+    //   K  = 2·Q_WIDTH (shift amount)
+    //   M  = floor(2^K / q) (precomputed constant)
+    //
+    //   p  [2·Q_WIDTH-1 : 0]  — product a·b           (< q^2 < 2^(2·Q_WIDTH))
+    //   pm [4·Q_WIDTH-1 : 0]  — p · M                 (< 2^(4·Q_WIDTH))
+    //   t  [2·Q_WIDTH-1 : 0]  — quotient est = pm>>K  (< q < 2^Q_WIDTH)
+    //   tq [2·Q_WIDTH-1 : 0]  — t · q
+    //   r  [2·Q_WIDTH-1 : 0]  — remainder ∈ [0, 2q), one correction
+    function [Q_WIDTH-1:0] mod_mul;
         input [Q_WIDTH-1:0] a, b, qq;
-        reg [2*Q_WIDTH-1:0] p, r;
+        reg [2*Q_WIDTH-1:0] p;
+        reg [4*Q_WIDTH-1:0] pm;
+        reg [Q_WIDTH:0]     t;
+        reg [2*Q_WIDTH-1:0] tq;
+        reg [2*Q_WIDTH-1:0] r;
         begin
-            p = {{Q_WIDTH{1'b0}}, a} * {{Q_WIDTH{1'b0}}, b};
-            r = p % {{Q_WIDTH{1'b0}}, qq};
-            mod_mul = r[Q_WIDTH-1:0];   // explicit truncate: result < qq < 2^Q_WIDTH
+            p  = a * b;
+            pm = {{(2*Q_WIDTH){1'b0}}, p} * {{(2*Q_WIDTH){1'b0}}, barrett_m};
+            t  = pm[4*Q_WIDTH-1 : 2*Q_WIDTH];
+            tq = t * {1'b0, qq};
+            r  = p - tq;
+            if (r >= {{Q_WIDTH{1'b0}}, qq})
+                r = r - {{Q_WIDTH{1'b0}}, qq};
+            mod_mul = r[Q_WIDTH-1:0];
         end
     endfunction
 

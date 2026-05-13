@@ -9,8 +9,27 @@ VL_ATTR_COLD void Vntt___024root___eval_static(Vntt___024root* vlSelf) {
     Vntt__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     auto& vlSelfRef = std::ref(*vlSelf).get();
     // Body
+    const uint64_t __VscopeHash = VL_MURMUR64_HASH(vlSelf->vlNamep);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->ntt__DOT__mod_mul__Vstatic__p, __VscopeHash, 8830060575164135358ull);
+    VL_SCOPED_RAND_RESET_W(160, vlSelf->ntt__DOT__mod_mul__Vstatic__pm, __VscopeHash, 17509652747396921490ull);
+    vlSelf->ntt__DOT__mod_mul__Vstatic__t = VL_SCOPED_RAND_RESET_Q(41, __VscopeHash, 13433300248210505018ull);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->ntt__DOT__mod_mul__Vstatic__tq, __VscopeHash, 2368101386610359988ull);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->ntt__DOT__mod_mul__Vstatic__r, __VscopeHash, 14260289709376739434ull);
     vlSelfRef.__Vtrigprevexpr___TOP__clk__0 = vlSelfRef.clk;
     vlSelfRef.__Vtrigprevexpr___TOP__rst_n__0 = vlSelfRef.rst_n;
+}
+
+VL_ATTR_COLD void Vntt___024root___eval_static__TOP(Vntt___024root* vlSelf) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+    Vntt___024root___eval_static__TOP\n"); );
+    Vntt__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
+    auto& vlSelfRef = std::ref(*vlSelf).get();
+    // Body
+    const uint64_t __VscopeHash = VL_MURMUR64_HASH(vlSelf->vlNamep);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->ntt__DOT__mod_mul__Vstatic__p, __VscopeHash, 8830060575164135358ull);
+    VL_SCOPED_RAND_RESET_W(160, vlSelf->ntt__DOT__mod_mul__Vstatic__pm, __VscopeHash, 17509652747396921490ull);
+    vlSelf->ntt__DOT__mod_mul__Vstatic__t = VL_SCOPED_RAND_RESET_Q(41, __VscopeHash, 13433300248210505018ull);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->ntt__DOT__mod_mul__Vstatic__tq, __VscopeHash, 2368101386610359988ull);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->ntt__DOT__mod_mul__Vstatic__r, __VscopeHash, 14260289709376739434ull);
 }
 
 VL_ATTR_COLD void Vntt___024root___eval_initial(Vntt___024root* vlSelf) {
@@ -44,7 +63,7 @@ VL_ATTR_COLD void Vntt___024root___eval_settle(Vntt___024root* vlSelf) {
 #ifdef VL_DEBUG
             Vntt___024root___dump_triggers__stl(vlSelfRef.__VstlTriggered, "stl"s);
 #endif
-            VL_FATAL_MT("ntt.v", 19, "", "DIDNOTCONVERGE: Settle region did not converge after '--converge-limit' of 100 tries");
+            VL_FATAL_MT("ntt.v", 18, "", "DIDNOTCONVERGE: Settle region did not converge after '--converge-limit' of 100 tries");
         }
         __VstlIterCount = ((IData)(1U) + __VstlIterCount);
         vlSelfRef.__VstlPhaseResult = Vntt___024root___eval_phase__stl(vlSelf);
@@ -101,93 +120,145 @@ VL_ATTR_COLD void Vntt___024root___stl_sequent__TOP__0(Vntt___024root* vlSelf) {
     ntt__DOT__ts = 0;
     SData/*12:0*/ ntt__DOT__grp;
     ntt__DOT__grp = 0;
+    QData/*39:0*/ ntt__DOT__vw;
+    ntt__DOT__vw = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__0__Vfuncout;
+    __Vfunc_ntt__DOT__mod_mul__0__Vfuncout = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__0__a;
+    __Vfunc_ntt__DOT__mod_mul__0__a = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__0__b;
+    __Vfunc_ntt__DOT__mod_mul__0__b = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__0__qq;
+    __Vfunc_ntt__DOT__mod_mul__0__qq = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__5__Vfuncout;
+    __Vfunc_ntt__DOT__mod_mul__5__Vfuncout = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__5__a;
+    __Vfunc_ntt__DOT__mod_mul__5__a = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__5__b;
+    __Vfunc_ntt__DOT__mod_mul__5__b = 0;
+    QData/*39:0*/ __Vfunc_ntt__DOT__mod_mul__5__qq;
+    __Vfunc_ntt__DOT__mod_mul__5__qq = 0;
     QData/*40:0*/ __VdfgRegularize_hebeb780c_0_1;
     __VdfgRegularize_hebeb780c_0_1 = 0;
     QData/*40:0*/ __VdfgRegularize_hebeb780c_0_4;
     __VdfgRegularize_hebeb780c_0_4 = 0;
-    QData/*40:0*/ __VdfgRegularize_hebeb780c_0_7;
-    __VdfgRegularize_hebeb780c_0_7 = 0;
+    VlWide<3>/*95:0*/ __Vtemp_2;
     VlWide<3>/*95:0*/ __Vtemp_3;
     VlWide<3>/*95:0*/ __Vtemp_4;
-    VlWide<3>/*95:0*/ __Vtemp_5;
-    VlWide<3>/*95:0*/ __Vtemp_6;
-    VlWide<3>/*95:0*/ __Vtemp_7;
+    VlWide<5>/*159:0*/ __Vtemp_5;
+    VlWide<5>/*159:0*/ __Vtemp_6;
     VlWide<3>/*95:0*/ __Vtemp_8;
+    VlWide<3>/*95:0*/ __Vtemp_9;
+    VlWide<3>/*95:0*/ __Vtemp_10;
     VlWide<3>/*95:0*/ __Vtemp_12;
     VlWide<3>/*95:0*/ __Vtemp_13;
-    VlWide<3>/*95:0*/ __Vtemp_14;
-    VlWide<3>/*95:0*/ __Vtemp_15;
     VlWide<3>/*95:0*/ __Vtemp_16;
     VlWide<3>/*95:0*/ __Vtemp_17;
+    VlWide<3>/*95:0*/ __Vtemp_19;
+    VlWide<3>/*95:0*/ __Vtemp_20;
+    VlWide<3>/*95:0*/ __Vtemp_21;
+    VlWide<5>/*159:0*/ __Vtemp_22;
+    VlWide<5>/*159:0*/ __Vtemp_23;
+    VlWide<3>/*95:0*/ __Vtemp_25;
+    VlWide<3>/*95:0*/ __Vtemp_26;
+    VlWide<3>/*95:0*/ __Vtemp_27;
+    VlWide<3>/*95:0*/ __Vtemp_29;
+    VlWide<3>/*95:0*/ __Vtemp_30;
+    VlWide<3>/*95:0*/ __Vtemp_33;
+    VlWide<3>/*95:0*/ __Vtemp_34;
     // Body
     vlSelfRef.__VdfgRegularize_hebeb780c_0_3 = (0x000001ffffffffffULL 
                                                 & (vlSelfRef.ntt__DOT__u_r 
                                                    + vlSelfRef.ntt__DOT__v_r));
-    __Vtemp_3[0U] = (IData)(vlSelfRef.ntt__DOT__v_r);
-    __Vtemp_3[1U] = (IData)((vlSelfRef.ntt__DOT__v_r 
-                             >> 0x00000020U));
-    __Vtemp_3[2U] = 0U;
-    __Vtemp_4[0U] = (IData)(vlSelfRef.ntt__DOT__w_r);
-    __Vtemp_4[1U] = (IData)((vlSelfRef.ntt__DOT__w_r 
-                             >> 0x00000020U));
-    __Vtemp_4[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_5, __Vtemp_3, __Vtemp_4);
-    __Vtemp_6[0U] = __Vtemp_5[0U];
-    __Vtemp_6[1U] = __Vtemp_5[1U];
-    __Vtemp_6[2U] = (0x0000ffffU & __Vtemp_5[2U]);
-    __Vtemp_7[0U] = (IData)(vlSelfRef.q);
-    __Vtemp_7[1U] = (IData)((vlSelfRef.q >> 0x00000020U));
-    __Vtemp_7[2U] = 0U;
-    VL_MODDIV_WWW(80, __Vtemp_8, __Vtemp_6, __Vtemp_7);
-    __VdfgRegularize_hebeb780c_0_7 = (0x000000ffffffffffULL 
-                                      & (((QData)((IData)(__Vtemp_8[1U])) 
-                                          << 0x00000020U) 
-                                         | (QData)((IData)(__Vtemp_8[0U]))));
-    __VdfgRegularize_hebeb780c_0_1 = (0x000001ffffffffffULL 
-                                      & (vlSelfRef.ntt__DOT__u_r 
-                                         + vlSelfRef.q));
     ntt__DOT__ts = (0x00001fffU & ((IData)(vlSelfRef.ntt__DOT__inv_r)
                                     ? (IData)(vlSelfRef.ntt__DOT__stage)
                                     : ((IData)(0x000cU) 
                                        - (IData)(vlSelfRef.ntt__DOT__stage))));
+    __Vfunc_ntt__DOT__mod_mul__0__qq = vlSelfRef.q;
+    __Vfunc_ntt__DOT__mod_mul__0__b = vlSelfRef.ntt__DOT__w_r;
+    __Vfunc_ntt__DOT__mod_mul__0__a = vlSelfRef.ntt__DOT__v_r;
+    __Vtemp_2[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__0__a);
+    __Vtemp_2[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__0__a 
+                             >> 0x00000020U));
+    __Vtemp_2[2U] = 0U;
+    __Vtemp_3[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__0__b);
+    __Vtemp_3[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__0__b 
+                             >> 0x00000020U));
+    __Vtemp_3[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_4, __Vtemp_2, __Vtemp_3);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[0U] = __Vtemp_4[0U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[1U] = __Vtemp_4[1U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[2U] = (0x0000ffffU 
+                                                   & __Vtemp_4[2U]);
+    __Vtemp_5[0U] = vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[0U];
+    __Vtemp_5[1U] = vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[1U];
+    __Vtemp_5[2U] = vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[2U];
+    __Vtemp_5[3U] = 0U;
+    __Vtemp_5[4U] = 0U;
+    __Vtemp_6[0U] = vlSelfRef.barrett_m[0U];
+    __Vtemp_6[1U] = vlSelfRef.barrett_m[1U];
+    __Vtemp_6[2U] = vlSelfRef.barrett_m[2U];
+    __Vtemp_6[3U] = 0U;
+    __Vtemp_6[4U] = 0U;
+    VL_MUL_W(5, vlSelfRef.ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_5, __Vtemp_6);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__t = (0x000001ffffffffffULL 
+                                               & (((QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__pm[3U])) 
+                                                   << 0x00000010U) 
+                                                  | ((QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__pm[2U])) 
+                                                     >> 0x00000010U)));
+    __Vtemp_8[0U] = (IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__t);
+    __Vtemp_8[1U] = (IData)((vlSelfRef.ntt__DOT__mod_mul__Vstatic__t 
+                             >> 0x00000020U));
+    __Vtemp_8[2U] = 0U;
+    __Vtemp_9[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__0__qq);
+    __Vtemp_9[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__0__qq 
+                             >> 0x00000020U));
+    __Vtemp_9[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_10, __Vtemp_8, __Vtemp_9);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq[0U] = __Vtemp_10[0U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq[1U] = __Vtemp_10[1U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq[2U] = 
+        (0x0000ffffU & __Vtemp_10[2U]);
+    VL_SUB_W(3, __Vtemp_12, vlSelfRef.ntt__DOT__mod_mul__Vstatic__p, vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[0U] = __Vtemp_12[0U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[1U] = __Vtemp_12[1U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[2U] = (0x0000ffffU 
+                                                   & __Vtemp_12[2U]);
+    __Vtemp_13[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__0__qq);
+    __Vtemp_13[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__0__qq 
+                              >> 0x00000020U));
+    __Vtemp_13[2U] = 0U;
+    if (VL_GTE_W(3, vlSelfRef.ntt__DOT__mod_mul__Vstatic__r, __Vtemp_13)) {
+        __Vtemp_16[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__0__qq);
+        __Vtemp_16[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__0__qq 
+                                  >> 0x00000020U));
+        __Vtemp_16[2U] = 0U;
+        VL_SUB_W(3, __Vtemp_17, vlSelfRef.ntt__DOT__mod_mul__Vstatic__r, __Vtemp_16);
+        vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[0U] 
+            = __Vtemp_17[0U];
+        vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[1U] 
+            = __Vtemp_17[1U];
+        vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[2U] 
+            = (0x0000ffffU & __Vtemp_17[2U]);
+    }
+    __Vfunc_ntt__DOT__mod_mul__0__Vfuncout = (0x000000ffffffffffULL 
+                                              & (((QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[1U])) 
+                                                  << 0x00000020U) 
+                                                 | (QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[0U]))));
+    ntt__DOT__vw = __Vfunc_ntt__DOT__mod_mul__0__Vfuncout;
+    __VdfgRegularize_hebeb780c_0_1 = (0x000001ffffffffffULL 
+                                      & (vlSelfRef.ntt__DOT__u_r 
+                                         + vlSelfRef.q));
+    ntt__DOT__grp = VL_SHIFTR_III(13,13,13, (IData)(vlSelfRef.ntt__DOT__k), (IData)(ntt__DOT__ts));
     vlSelfRef.__VdfgRegularize_hebeb780c_0_0 = (0x000001ffffffffffULL 
                                                 & (vlSelfRef.ntt__DOT__u_r 
-                                                   + __VdfgRegularize_hebeb780c_0_7));
+                                                   + ntt__DOT__vw));
     vlSelfRef.__VdfgRegularize_hebeb780c_0_2 = (0x000001ffffffffffULL 
                                                 & (__VdfgRegularize_hebeb780c_0_1 
-                                                   - __VdfgRegularize_hebeb780c_0_7));
+                                                   - ntt__DOT__vw));
     __VdfgRegularize_hebeb780c_0_4 = (0x000001ffffffffffULL 
                                       & (__VdfgRegularize_hebeb780c_0_1 
                                          - vlSelfRef.ntt__DOT__v_r));
-    ntt__DOT__grp = VL_SHIFTR_III(13,13,13, (IData)(vlSelfRef.ntt__DOT__k), (IData)(ntt__DOT__ts));
-    __Vtemp_12[0U] = (IData)((0x000000ffffffffffULL 
-                              & ((__VdfgRegularize_hebeb780c_0_4 
-                                  >= vlSelfRef.q) ? 
-                                 (__VdfgRegularize_hebeb780c_0_4 
-                                  - vlSelfRef.q) : __VdfgRegularize_hebeb780c_0_4)));
-    __Vtemp_12[1U] = (IData)(((0x000000ffffffffffULL 
-                               & ((__VdfgRegularize_hebeb780c_0_4 
-                                   >= vlSelfRef.q) ? 
-                                  (__VdfgRegularize_hebeb780c_0_4 
-                                   - vlSelfRef.q) : __VdfgRegularize_hebeb780c_0_4)) 
-                              >> 0x00000020U));
-    __Vtemp_12[2U] = 0U;
-    __Vtemp_13[0U] = (IData)(vlSelfRef.ntt__DOT__w_r);
-    __Vtemp_13[1U] = (IData)((vlSelfRef.ntt__DOT__w_r 
-                              >> 0x00000020U));
-    __Vtemp_13[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_14, __Vtemp_12, __Vtemp_13);
-    __Vtemp_15[0U] = __Vtemp_14[0U];
-    __Vtemp_15[1U] = __Vtemp_14[1U];
-    __Vtemp_15[2U] = (0x0000ffffU & __Vtemp_14[2U]);
-    __Vtemp_16[0U] = (IData)(vlSelfRef.q);
-    __Vtemp_16[1U] = (IData)((vlSelfRef.q >> 0x00000020U));
-    __Vtemp_16[2U] = 0U;
-    VL_MODDIV_WWW(80, __Vtemp_17, __Vtemp_15, __Vtemp_16);
-    vlSelfRef.ntt__DOT__gs_v = (0x000000ffffffffffULL 
-                                & (((QData)((IData)(__Vtemp_17[1U])) 
-                                    << 0x00000020U) 
-                                   | (QData)((IData)(__Vtemp_17[0U]))));
     vlSelfRef.ntt__DOT__tw_idx = (0x00003fffU & (((IData)(vlSelfRef.ntt__DOT__inv_r)
                                                    ? 0x2000U
                                                    : 0U) 
@@ -208,6 +279,83 @@ VL_ATTR_COLD void Vntt___024root___stl_sequent__TOP__0(Vntt___024root* vlSelf) {
                                              | ((IData)(vlSelfRef.ntt__DOT__k) 
                                                 & (VL_SHIFTL_III(13,13,13, (IData)(1U), (IData)(ntt__DOT__ts)) 
                                                    - (IData)(1U)))));
+    __Vfunc_ntt__DOT__mod_mul__5__qq = vlSelfRef.q;
+    __Vfunc_ntt__DOT__mod_mul__5__b = vlSelfRef.ntt__DOT__w_r;
+    __Vfunc_ntt__DOT__mod_mul__5__a = (0x000000ffffffffffULL 
+                                       & ((__VdfgRegularize_hebeb780c_0_4 
+                                           >= vlSelfRef.q)
+                                           ? (__VdfgRegularize_hebeb780c_0_4 
+                                              - vlSelfRef.q)
+                                           : __VdfgRegularize_hebeb780c_0_4));
+    __Vtemp_19[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__5__a);
+    __Vtemp_19[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__5__a 
+                              >> 0x00000020U));
+    __Vtemp_19[2U] = 0U;
+    __Vtemp_20[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__5__b);
+    __Vtemp_20[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__5__b 
+                              >> 0x00000020U));
+    __Vtemp_20[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_21, __Vtemp_19, __Vtemp_20);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[0U] = __Vtemp_21[0U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[1U] = __Vtemp_21[1U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[2U] = (0x0000ffffU 
+                                                   & __Vtemp_21[2U]);
+    __Vtemp_22[0U] = vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[0U];
+    __Vtemp_22[1U] = vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[1U];
+    __Vtemp_22[2U] = vlSelfRef.ntt__DOT__mod_mul__Vstatic__p[2U];
+    __Vtemp_22[3U] = 0U;
+    __Vtemp_22[4U] = 0U;
+    __Vtemp_23[0U] = vlSelfRef.barrett_m[0U];
+    __Vtemp_23[1U] = vlSelfRef.barrett_m[1U];
+    __Vtemp_23[2U] = vlSelfRef.barrett_m[2U];
+    __Vtemp_23[3U] = 0U;
+    __Vtemp_23[4U] = 0U;
+    VL_MUL_W(5, vlSelfRef.ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_22, __Vtemp_23);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__t = (0x000001ffffffffffULL 
+                                               & (((QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__pm[3U])) 
+                                                   << 0x00000010U) 
+                                                  | ((QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__pm[2U])) 
+                                                     >> 0x00000010U)));
+    __Vtemp_25[0U] = (IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__t);
+    __Vtemp_25[1U] = (IData)((vlSelfRef.ntt__DOT__mod_mul__Vstatic__t 
+                              >> 0x00000020U));
+    __Vtemp_25[2U] = 0U;
+    __Vtemp_26[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__5__qq);
+    __Vtemp_26[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__5__qq 
+                              >> 0x00000020U));
+    __Vtemp_26[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_27, __Vtemp_25, __Vtemp_26);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq[0U] = __Vtemp_27[0U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq[1U] = __Vtemp_27[1U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq[2U] = 
+        (0x0000ffffU & __Vtemp_27[2U]);
+    VL_SUB_W(3, __Vtemp_29, vlSelfRef.ntt__DOT__mod_mul__Vstatic__p, vlSelfRef.ntt__DOT__mod_mul__Vstatic__tq);
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[0U] = __Vtemp_29[0U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[1U] = __Vtemp_29[1U];
+    vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[2U] = (0x0000ffffU 
+                                                   & __Vtemp_29[2U]);
+    __Vtemp_30[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__5__qq);
+    __Vtemp_30[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__5__qq 
+                              >> 0x00000020U));
+    __Vtemp_30[2U] = 0U;
+    if (VL_GTE_W(3, vlSelfRef.ntt__DOT__mod_mul__Vstatic__r, __Vtemp_30)) {
+        __Vtemp_33[0U] = (IData)(__Vfunc_ntt__DOT__mod_mul__5__qq);
+        __Vtemp_33[1U] = (IData)((__Vfunc_ntt__DOT__mod_mul__5__qq 
+                                  >> 0x00000020U));
+        __Vtemp_33[2U] = 0U;
+        VL_SUB_W(3, __Vtemp_34, vlSelfRef.ntt__DOT__mod_mul__Vstatic__r, __Vtemp_33);
+        vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[0U] 
+            = __Vtemp_34[0U];
+        vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[1U] 
+            = __Vtemp_34[1U];
+        vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[2U] 
+            = (0x0000ffffU & __Vtemp_34[2U]);
+    }
+    __Vfunc_ntt__DOT__mod_mul__5__Vfuncout = (0x000000ffffffffffULL 
+                                              & (((QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[1U])) 
+                                                  << 0x00000020U) 
+                                                 | (QData)((IData)(vlSelfRef.ntt__DOT__mod_mul__Vstatic__r[0U]))));
+    vlSelfRef.ntt__DOT__gs_v = __Vfunc_ntt__DOT__mod_mul__5__Vfuncout;
     vlSelfRef.ntt__DOT__va = (0x00001fffU & ((IData)(vlSelfRef.ntt__DOT__ua) 
                                              | VL_SHIFTL_III(13,13,13, (IData)(1U), (IData)(ntt__DOT__ts))));
 }
@@ -285,6 +433,7 @@ VL_ATTR_COLD void Vntt___024root___ctor_var_reset(Vntt___024root* vlSelf) {
     vlSelf->rst_n = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 1638864771569018232ull);
     vlSelf->q = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 8861071527689086543ull);
     vlSelf->n_inv = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 8929588735678779128ull);
+    VL_SCOPED_RAND_RESET_W(80, vlSelf->barrett_m, __VscopeHash, 9163698460787631846ull);
     vlSelf->coeff_wr_en = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 13018687539275992020ull);
     vlSelf->coeff_wr_addr = VL_SCOPED_RAND_RESET_I(13, __VscopeHash, 11746289273846781034ull);
     vlSelf->coeff_wr_data = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 10803392500267065075ull);
