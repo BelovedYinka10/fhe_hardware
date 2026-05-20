@@ -206,13 +206,10 @@ module tb_cipher_hash;
 
         // ── Read results (1-cycle registered read latency) ──────
         $display("  [%0t] Reading result...", $time);
-        // Prime the pipeline: first address
-        rd_addr = 0;
-        @(posedge clk);
-        // Now read: rd_data has data for previous rd_addr
         for (i = 0; i < N; i = i + 1) begin
-            rd_addr = (i + 1 < N) ? i[LOGN-1:0] + 1 : 0;
-            @(posedge clk);
+            rd_addr = i[LOGN-1:0];
+            @(posedge clk);   // rd_data <= mem_h[i] scheduled in NBA
+            #1;               // let NBA complete
             result[i] = rd_data;
         end
 
