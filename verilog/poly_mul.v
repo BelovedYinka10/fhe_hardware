@@ -71,6 +71,19 @@ module poly_mul #(
     // ── Twiddle RAM (forwarded directly to ntt instance) ────────
     // We let the ntt module own it; we just wire the write port.
 
+    // ── FSM states (declared before NTT instance — Vivado requires it) ──
+    localparam [2:0]
+        ST_IDLE    = 3'd0,
+        ST_NTT_A   = 3'd1,   // run NTT on operand A
+        ST_COPY_B  = 3'd2,   // reload operand B into ntt coeff RAM
+        ST_NTT_B   = 3'd3,   // run NTT on operand B
+        ST_PMUL    = 3'd4,   // pointwise multiply A_ntt * B_ntt
+        ST_INTT    = 3'd5,   // INTT of product
+        ST_DONE    = 3'd6;
+
+    reg [2:0]      state;
+    reg [LOGN:0]   idx;       // needs LOGN+1 bits to count up to N
+
     // ── NTT instance ─────────────────────────────────────────────
     reg                ntt_coeff_wr_en;
     reg  [LOGN-1:0]    ntt_coeff_wr_addr;
@@ -133,18 +146,6 @@ module poly_mul #(
     endfunction
 
     // ── FSM ──────────────────────────────────────────────────────
-    localparam [2:0]
-        ST_IDLE    = 3'd0,
-        ST_NTT_A   = 3'd1,   // run NTT on operand A
-        ST_COPY_B  = 3'd2,   // reload operand B into ntt coeff RAM
-        ST_NTT_B   = 3'd3,   // run NTT on operand B
-        ST_PMUL    = 3'd4,   // pointwise multiply A_ntt * B_ntt
-        ST_INTT    = 3'd5,   // INTT of product
-        ST_DONE    = 3'd6;
-
-    reg [2:0]      state;
-    reg [LOGN:0]   idx;       // needs LOGN+1 bits to count up to N
-
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state             <= ST_IDLE;

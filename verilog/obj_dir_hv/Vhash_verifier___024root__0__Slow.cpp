@@ -855,6 +855,8 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
     for (int __Vi0 = 0; __Vi0 < 8192; ++__Vi0) {
         vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt[__Vi0] = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 2646961255638154577ull);
     }
+    vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__state = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3899348665926092083ull);
+    vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__idx = VL_SCOPED_RAND_RESET_I(14, __VscopeHash, 10697548622189233628ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_en = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 7554290092520382926ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_addr = VL_SCOPED_RAND_RESET_I(13, __VscopeHash, 16877617317500803062ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_data = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 772188790058326800ull);
@@ -863,8 +865,6 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_done = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 8633088237445718484ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__int_rd_addr = VL_SCOPED_RAND_RESET_I(13, __VscopeHash, 3081971632744796382ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_rd_data = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 4803585253398692966ull);
-    vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__state = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3899348665926092083ull);
-    vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__idx = VL_SCOPED_RAND_RESET_I(14, __VscopeHash, 10697548622189233628ull);
     for (int __Vi0 = 0; __Vi0 < 8192; ++__Vi0) {
         vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__coeff[__Vi0] = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 4354146647389504492ull);
     }
@@ -901,6 +901,8 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
     for (int __Vi0 = 0; __Vi0 < 8192; ++__Vi0) {
         vlSelf->hash_verifier__DOT__u_pmul__DOT__mem_ntt[__Vi0] = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 10473293836095787998ull);
     }
+    vlSelf->hash_verifier__DOT__u_pmul__DOT__state = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3015890349949140473ull);
+    vlSelf->hash_verifier__DOT__u_pmul__DOT__idx = VL_SCOPED_RAND_RESET_I(14, __VscopeHash, 2680130297339594348ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_en = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 14107438484345328093ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_addr = VL_SCOPED_RAND_RESET_I(13, __VscopeHash, 16112995040242059283ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_data = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 9454503165235066382ull);
@@ -909,8 +911,6 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
     vlSelf->hash_verifier__DOT__u_pmul__DOT__ntt_done = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 680794447086656639ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__int_rd_addr = VL_SCOPED_RAND_RESET_I(13, __VscopeHash, 6579325779928582493ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__ntt_rd_data = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 16862519231066967803ull);
-    vlSelf->hash_verifier__DOT__u_pmul__DOT__state = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3015890349949140473ull);
-    vlSelf->hash_verifier__DOT__u_pmul__DOT__idx = VL_SCOPED_RAND_RESET_I(14, __VscopeHash, 2680130297339594348ull);
     for (int __Vi0 = 0; __Vi0 < 8192; ++__Vi0) {
         vlSelf->hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__coeff[__Vi0] = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 11160790015074860911ull);
     }
