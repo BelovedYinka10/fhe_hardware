@@ -72,7 +72,9 @@ module ntt #(
     localparam integer BARRETT_K = 2 * Q_WIDTH;   // shift amount for Barrett
 
     // ── Memories ──────────────────────────────────────────────────
+    (* ram_style = "block" *)
     reg [Q_WIDTH-1:0] coeff [0:N-1];        // coefficient RAM (true dual-port)
+    (* ram_style = "block" *)
     reg [Q_WIDTH-1:0] tw    [0:2*N-1];      // twiddle ROM (simple dual-port)
 
     // ── FSM states ────────────────────────────────────────────────
