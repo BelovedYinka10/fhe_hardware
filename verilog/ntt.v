@@ -11,6 +11,21 @@
 // barrett_m = floor(2^(2·Q_WIDTH) / q) must be precomputed and
 // supplied as a runtime input port.
 //
+// Memory architecture (BRAM-friendly):
+//   coeff[]  — true dual-port BRAM.
+//       Port A: coefficient load, butterfly operand u, INTT scale,
+//               and the result read-back (rd_addr) port.
+//       Port B: butterfly operand v.
+//     Both ports use a registered read (1-cycle latency) and never
+//     read/write the same address in the same cycle, so the array
+//     infers cleanly as Block RAM (2 ports max).
+//   tw[]     — simple dual-port BRAM (1 write port, 1 registered
+//              read port).
+//
+// All memory access flows through exactly these ports; there is no
+// asynchronous read-modify-write, which is what previously blocked
+// Block-RAM inference and forced a ~1M-FF (unroutable) fallback.
+//
 // Parameters
 //   LOGN    : log2(N)  — polynomial degree N = 2^LOGN  (default 13)
 //   Q_WIDTH : bit-width of prime modulus q             (default 40)
@@ -45,7 +60,7 @@ module ntt #(
 
     // ── Coefficient read port (poll result after done) ───────────
     input  wire [LOGN-1:0]       rd_addr,
-    output reg  [Q_WIDTH-1:0]    rd_data,
+    output wire [Q_WIDTH-1:0]    rd_data,
 
     output reg                   done
 );
@@ -57,16 +72,17 @@ module ntt #(
     localparam integer BARRETT_K = 2 * Q_WIDTH;   // shift amount for Barrett
 
     // ── Memories ──────────────────────────────────────────────────
-    reg [Q_WIDTH-1:0] coeff [0:N-1];        // coefficient RAM
-    reg [Q_WIDTH-1:0] tw    [0:2*N-1];      // twiddle ROM (fwd + inv)
+    reg [Q_WIDTH-1:0] coeff [0:N-1];        // coefficient RAM (true dual-port)
+    reg [Q_WIDTH-1:0] tw    [0:2*N-1];      // twiddle ROM (simple dual-port)
 
     // ── FSM states ────────────────────────────────────────────────
     localparam [2:0]
-        ST_IDLE  = 3'd0,
-        ST_READ  = 3'd1,
-        ST_WRITE = 3'd2,
-        ST_SCALE = 3'd3,   // INTT: multiply all coeffs by n_inv
-        ST_DONE  = 3'd4;
+        ST_IDLE     = 3'd0,
+        ST_READ     = 3'd1,
+        ST_WRITE    = 3'd2,
+        ST_SCALE_RD = 3'd3,   // INTT: issue read of coeff[sc_idx]
+        ST_SCALE_WR = 3'd4,   // INTT: write coeff[sc_idx] * n_inv
+        ST_DONE     = 3'd5;
 
     reg [2:0]        state;
     reg [LOGN-1:0]   stage;     // current stage 0..LOGN-1
@@ -105,9 +121,6 @@ module ntt #(
 
     wire [LOGN:0] tw_base = inv_r ? N[LOGN:0] : {(LOGN+1){1'b0}};
     wire [LOGN:0] tw_idx  = tw_base + {1'b0, m_val} + {1'b0, grp};
-
-    // ── Latched butterfly operands ────────────────────────────────
-    reg [Q_WIDTH-1:0] u_r, v_r, w_r;
 
     // ── Behavioural modular arithmetic ────────────────────────────
     // mod_add : (a + b) mod q
@@ -161,20 +174,106 @@ module ntt #(
         end
     endfunction
 
-    // ── Butterfly results (combinational from latched operands) ───
+    // ── Registered memory outputs (1-cycle read latency) ──────────
+    reg [Q_WIDTH-1:0] cdo_a, cdo_b;   // coeff port A / port B read data
+    reg [Q_WIDTH-1:0] tdo;            // twiddle read data
+
+    // Operand aliases: by the time the FSM is in ST_WRITE these hold
+    // coeff[ua], coeff[va], tw[tw_idx] that were addressed in ST_READ.
+    wire [Q_WIDTH-1:0] u_w = cdo_a;
+    wire [Q_WIDTH-1:0] v_w = cdo_b;
+    wire [Q_WIDTH-1:0] w_w = tdo;
+
+    // ── Butterfly results (combinational from registered operands) ─
     //
     // Cooley–Tukey (NTT):     u' = u + v·w,   v' = u - v·w
     // Gentleman–Sande (INTT): u' = u + v,      v' = (u - v)·w
 
-    wire [Q_WIDTH-1:0] vw     = mod_mul(v_r, w_r, q);
-    wire [Q_WIDTH-1:0] ct_u   = mod_add(u_r, vw,  q);
-    wire [Q_WIDTH-1:0] ct_v   = mod_sub(u_r, vw,  q);
+    wire [Q_WIDTH-1:0] vw     = mod_mul(v_w, w_w, q);
+    wire [Q_WIDTH-1:0] ct_u   = mod_add(u_w, vw,  q);
+    wire [Q_WIDTH-1:0] ct_v   = mod_sub(u_w, vw,  q);
 
-    wire [Q_WIDTH-1:0] gs_u   = mod_add(u_r, v_r, q);
-    wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_r, v_r, q);
-    wire [Q_WIDTH-1:0] gs_v   = mod_mul(gs_dif, w_r, q);
+    wire [Q_WIDTH-1:0] gs_u   = mod_add(u_w, v_w, q);
+    wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_w, v_w, q);
+    wire [Q_WIDTH-1:0] gs_v   = mod_mul(gs_dif, w_w, q);
 
-    // ── FSM ───────────────────────────────────────────────────────
+    // INTT final scale: coeff[i] * n_inv mod q
+    wire [Q_WIDTH-1:0] scaled = mod_mul(u_w, n_inv, q);
+
+    // ── Coefficient memory port control (combinational mux) ───────
+    reg [LOGN-1:0]    caddr_a, caddr_b;
+    reg               cwe_a, cwe_b;
+    reg [Q_WIDTH-1:0] cdi_a, cdi_b;
+
+    always @* begin
+        // Defaults: read butterfly operands, no writes
+        caddr_a = ua;
+        caddr_b = va;
+        cwe_a   = 1'b0;
+        cwe_b   = 1'b0;
+        cdi_a   = inv_r ? gs_u : ct_u;
+        cdi_b   = inv_r ? gs_v : ct_v;
+
+        case (state)
+            ST_IDLE: begin
+                // Host loads coefficients here; otherwise drive the
+                // result-poll address (rd_addr) onto port A.
+                if (coeff_wr_en) begin
+                    caddr_a = coeff_wr_addr;
+                    cwe_a   = 1'b1;
+                    cdi_a   = coeff_wr_data;
+                end else begin
+                    caddr_a = rd_addr;
+                end
+            end
+
+            ST_READ: begin
+                // Issue reads of u (port A) and v (port B)
+                caddr_a = ua;
+                caddr_b = va;
+            end
+
+            ST_WRITE: begin
+                // Write butterfly results back to the same addresses
+                caddr_a = ua;
+                caddr_b = va;
+                cwe_a   = 1'b1;
+                cwe_b   = 1'b1;
+            end
+
+            ST_SCALE_RD: begin
+                caddr_a = sc_idx[LOGN-1:0];
+            end
+
+            ST_SCALE_WR: begin
+                caddr_a = sc_idx[LOGN-1:0];
+                cwe_a   = 1'b1;
+                cdi_a   = scaled;
+            end
+
+            default: ;
+        endcase
+    end
+
+    // ── Coefficient RAM: true dual-port, registered reads ─────────
+    always @(posedge clk) begin
+        if (cwe_a) coeff[caddr_a] <= cdi_a;
+        cdo_a <= coeff[caddr_a];
+
+        if (cwe_b) coeff[caddr_b] <= cdi_b;
+        cdo_b <= coeff[caddr_b];
+    end
+
+    // ── Twiddle RAM: simple dual-port (1 write, 1 registered read) ─
+    always @(posedge clk) begin
+        if (tw_wr_en) tw[tw_wr_addr] <= tw_wr_data;
+        tdo <= tw[tw_idx];
+    end
+
+    // Result read-back: port A registered output (1-cycle latency)
+    assign rd_data = cdo_a;
+
+    // ── Control FSM ───────────────────────────────────────────────
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state  <= ST_IDLE;
@@ -182,14 +281,8 @@ module ntt #(
             stage  <= 0;
             k      <= 0;
             sc_idx <= 0;
+            inv_r  <= 1'b0;
         end else begin
-            // Write ports — always active (load before start)
-            if (tw_wr_en)    tw[tw_wr_addr]       <= tw_wr_data;
-            if (coeff_wr_en) coeff[coeff_wr_addr] <= coeff_wr_data;
-
-            // Read port — registered, 1-cycle latency
-            rd_data <= coeff[rd_addr];
-
             case (state)
 
                 // ── Wait for start pulse ──────────────────────────
@@ -203,25 +296,17 @@ module ntt #(
                     end
                 end
 
-                // ── Latch operands from memory ────────────────────
-                ST_READ: begin
-                    u_r   <= coeff[ua];
-                    v_r   <= coeff[va];
-                    w_r   <= tw[tw_idx];
-                    state <= ST_WRITE;
-                end
+                // ── Operands addressed; latched next cycle ────────
+                ST_READ: state <= ST_WRITE;
 
                 // ── Write butterfly result, advance counters ──────
                 ST_WRITE: begin
-                    coeff[ua] <= inv_r ? gs_u : ct_u;
-                    coeff[va] <= inv_r ? gs_v : ct_v;
-
                     if (k == K_MAX[LOGN-1:0]) begin
                         k <= 0;
                         if (stage == S_MAX[LOGN-1:0]) begin
                             // All LOGN stages complete
                             sc_idx <= 0;
-                            state  <= inv_r ? ST_SCALE : ST_DONE;
+                            state  <= inv_r ? ST_SCALE_RD : ST_DONE;
                         end else begin
                             stage <= stage + 1'b1;
                             state <= ST_READ;
@@ -232,14 +317,16 @@ module ntt #(
                     end
                 end
 
-                // ── INTT final: coeff[i] *= n_inv mod q ──────────
-                ST_SCALE: begin
-                    if (sc_idx < N[LOGN:0]) begin
-                        coeff[sc_idx[LOGN-1:0]] <=
-                            mod_mul(coeff[sc_idx[LOGN-1:0]], n_inv, q);
-                        sc_idx <= sc_idx + 1'b1;
-                    end else begin
+                // ── INTT final scale: issue read of coeff[sc_idx] ─
+                ST_SCALE_RD: state <= ST_SCALE_WR;
+
+                // ── INTT final scale: write coeff[sc_idx]*n_inv ───
+                ST_SCALE_WR: begin
+                    if (sc_idx == N[LOGN:0] - 1'b1) begin
                         state <= ST_DONE;
+                    end else begin
+                        sc_idx <= sc_idx + 1'b1;
+                        state  <= ST_SCALE_RD;
                     end
                 end
 
