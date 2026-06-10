@@ -103,13 +103,7 @@ module hash_verifier #(
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] h2 [0:N-1];
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] h3 [0:N-1];
     reg [Q_WIDTH-1:0] h3_rd;   // registered read of h3 for the compare stage
-
-    // Registered read port for h3 (read process separate from FSM write
-    // → simple-dual-port Block RAM). Shares pa_rd_addr so h3_rd lines up
-    // with poly_add's 2-cycle rd_data latency in ST_COMPARE.
-    always @(posedge clk) begin
-        h3_rd <= h3[pa_rd_addr];
-    end
+    // (h3_rd read process is declared below, after pa_rd_addr exists)
 
     // ── cipher_hash instance (shared across h1, h2, h3) ─────────
     reg                ch_ct_wr_en;
@@ -219,6 +213,14 @@ module hash_verifier #(
         .rd_data    (pa_rd_data),
         .done       (pa_done)
     );
+
+    // ── Registered read port for h3 ──────────────────────────────
+    // Read process separate from the FSM write → simple-dual-port
+    // Block RAM. Shares pa_rd_addr so h3_rd lines up with poly_add's
+    // 2-cycle rd_data latency in ST_COMPARE. (No reset on h3_rd.)
+    always @(posedge clk) begin
+        h3_rd <= h3[pa_rd_addr];
+    end
 
     // ── FSM ──────────────────────────────────────────────────────
     localparam [3:0]

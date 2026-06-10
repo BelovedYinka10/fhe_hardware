@@ -178,7 +178,10 @@ module poly_mul #(
             ntt_inverse       <= 1'b0;
             ntt_coeff_wr_en   <= 1'b0;
             ntt_coeff_wr_addr <= 0;
-            ntt_coeff_wr_data <= 0;
+            // NOTE: ntt_coeff_wr_data is intentionally NOT reset — it is the
+            // registered read output of mem_b, and a reset on that register
+            // prevents Block-RAM inference (it's a don't-care when
+            // ntt_coeff_wr_en == 0, which the reset already guarantees).
         end else begin
             // Shadow write: stash operand B for the NTT(B) reload step.
             if (b_wr_en) mem_b[b_wr_addr] <= b_wr_data;

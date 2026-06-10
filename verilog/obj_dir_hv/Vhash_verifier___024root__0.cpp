@@ -2219,7 +2219,6 @@ void Vhash_verifier___024root___nba_sequent__TOP__2(Vhash_verifier___024root* vl
         vlSelfRef.hash_verifier__DOT__u_pmul__DOT__ntt_inverse = 0U;
         vlSelfRef.hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_en = 0U;
         vlSelfRef.hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_addr = 0U;
-        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_data = 0ULL;
     }
     vlSelfRef.hash_verifier__DOT__u_pmul__DOT__idx 
         = vlSelfRef.__Vdly__hash_verifier__DOT__u_pmul__DOT__idx;
@@ -2418,7 +2417,6 @@ void Vhash_verifier___024root___nba_sequent__TOP__2(Vhash_verifier___024root* vl
         vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_inverse = 0U;
         vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_en = 0U;
         vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_addr = 0U;
-        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_data = 0ULL;
     }
     vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__idx 
         = vlSelfRef.__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__idx;
