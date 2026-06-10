@@ -64,9 +64,9 @@ module poly_mul #(
     localparam integer N = 1 << LOGN;
 
     // ── Internal coefficient RAMs ────────────────────────────────
-    reg [Q_WIDTH-1:0] mem_a   [0:N-1];   // original a
-    reg [Q_WIDTH-1:0] mem_b   [0:N-1];   // original b
-    reg [Q_WIDTH-1:0] mem_ntt [0:N-1];   // NTT working buffer
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_a   [0:N-1];   // original a
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_b   [0:N-1];   // original b / products
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_ntt [0:N-1];   // NTT working buffer
 
     // ── Twiddle RAM (forwarded directly to ntt instance) ────────
     // We let the ntt module own it; we just wire the write port.

@@ -75,16 +75,29 @@ module cipher_hash #(
 );
     localparam integer N = 1 << LOGN;
 
-    // ── Ciphertext coefficient RAMs [CT_SIZE][N] ─────────────────
-    reg [Q_WIDTH-1:0] ct [0:CT_SIZE-1][0:N-1];
+    // ── Ciphertext coefficient RAM (CT_SIZE × N) ─────────────────
+    // Flattened to 1-D so Vivado infers Block RAM (not a multi-D logic
+    // variable).  linear address = comp*N + coeff
+    localparam integer CT_DEPTH = CT_SIZE * N;
+
+    (* ram_style = "block" *)
+    reg [Q_WIDTH-1:0] ct [0:CT_DEPTH-1];
     reg [Q_WIDTH-1:0] mem_r  [0:N-1];   // r_pow (starts as r, squared each iteration)
     reg [Q_WIDTH-1:0] mem_h  [0:N-1];   // accumulator
+
+    function integer ct_lin;
+        input [1:0]      comp;
+        input [LOGN-1:0] a;
+        begin
+            ct_lin = comp * N + a;
+        end
+    endfunction
 
     // ── Write to ct or r RAMs ────────────────────────────────────
     integer wi;
     always @(posedge clk) begin
-        if (ct_wr_en) ct[ct_sel][ct_wr_addr] <= ct_wr_data;
-        if (r_wr_en)  mem_r[r_wr_addr]       <= r_wr_data;
+        if (ct_wr_en) ct[ct_lin(ct_sel, ct_wr_addr)] <= ct_wr_data;
+        if (r_wr_en)  mem_r[r_wr_addr]               <= r_wr_data;
     end
 
     // ── poly_mul sub-instance ────────────────────────────────────
@@ -227,7 +240,7 @@ module cipher_hash #(
 
                 // ── Copy ct[ct_last] into mem_h (accumulator) ────
                 ST_INIT: begin
-                    mem_h[idx] <= ct[ct_last][idx];
+                    mem_h[idx] <= ct[ct_lin(ct_last, idx[LOGN-1:0])];
 
                     if (idx == N-1) begin
                         idx      <= 0;
@@ -243,7 +256,7 @@ module cipher_hash #(
                 ST_LOAD_MUL: begin
                     pm_a_wr_en   <= 1'b1;
                     pm_a_wr_addr <= idx;
-                    pm_a_wr_data <= ct[horner_i][idx];
+                    pm_a_wr_data <= ct[ct_lin(horner_i, idx[LOGN-1:0])];
 
                     pm_b_wr_en   <= 1'b1;
                     pm_b_wr_addr <= idx;

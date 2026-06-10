@@ -76,16 +76,32 @@ module hash_verifier #(
     localparam integer N = 1 << LOGN;
 
     // ── Ciphertext storage (3 ciphertexts × CT_SIZE × N) ────────
-    reg [Q_WIDTH-1:0] ct_mem [0:2][0:CT_SIZE-1][0:N-1];
+    // Flattened to a 1-D array so Vivado infers Block RAM instead of
+    // treating the 3-D array as one huge (2.95 Mbit) logic variable
+    // (Synth 8-4556 / 8-3391).
+    //   linear address = (ct_id*CT_SIZE + comp)*N + coeff
+    localparam integer CT_MEM_DEPTH = 3 * CT_SIZE * N;
+
+    (* ram_style = "block" *)
+    reg [Q_WIDTH-1:0] ct_mem [0:CT_MEM_DEPTH-1];
+
+    function integer ct_lin;
+        input [1:0]        cid;
+        input [1:0]        comp;
+        input [LOGN-1:0]   a;
+        begin
+            ct_lin = ((cid * CT_SIZE) + comp) * N + a;
+        end
+    endfunction
 
     always @(posedge clk) begin
-        if (ct_wr_en) ct_mem[ct_id][ct_sel][ct_wr_addr] <= ct_wr_data;
+        if (ct_wr_en) ct_mem[ct_lin(ct_id, ct_sel, ct_wr_addr)] <= ct_wr_data;
     end
 
     // ── Hash result storage: h1, h2, h3 ─────────────────────────
-    reg [Q_WIDTH-1:0] h1 [0:N-1];
-    reg [Q_WIDTH-1:0] h2 [0:N-1];
-    reg [Q_WIDTH-1:0] h3 [0:N-1];
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] h1 [0:N-1];
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] h2 [0:N-1];
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] h3 [0:N-1];
 
     // ── cipher_hash instance (shared across h1, h2, h3) ─────────
     reg                ch_ct_wr_en;
@@ -277,7 +293,7 @@ module hash_verifier #(
                     ch_ct_wr_en   <= 1;
                     ch_ct_sel     <= comp_i;
                     ch_ct_wr_addr <= idx;
-                    ch_ct_wr_data <= ct_mem[0][comp_i][idx];
+                    ch_ct_wr_data <= ct_mem[ct_lin(2'd0, comp_i, idx[LOGN-1:0])];
 
                     if (idx == N-1) begin
                         idx <= 0;
@@ -320,7 +336,7 @@ module hash_verifier #(
                     ch_ct_wr_en   <= 1;
                     ch_ct_sel     <= comp_i;
                     ch_ct_wr_addr <= idx;
-                    ch_ct_wr_data <= ct_mem[1][comp_i][idx];
+                    ch_ct_wr_data <= ct_mem[ct_lin(2'd1, comp_i, idx[LOGN-1:0])];
 
                     if (idx == N-1) begin
                         idx <= 0;
@@ -354,7 +370,7 @@ module hash_verifier #(
                     ch_ct_wr_en   <= 1;
                     ch_ct_sel     <= comp_i;
                     ch_ct_wr_addr <= idx;
-                    ch_ct_wr_data <= ct_mem[2][comp_i][idx];
+                    ch_ct_wr_data <= ct_mem[ct_lin(2'd2, comp_i, idx[LOGN-1:0])];
 
                     if (idx == N-1) begin
                         idx <= 0;
