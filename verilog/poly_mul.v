@@ -221,7 +221,7 @@ module poly_mul #(
                     if (idx < N) begin
                         ntt_coeff_wr_en   <= 1'b1;
                         ntt_coeff_wr_addr <= idx[LOGN-1:0];
-                        ntt_coeff_wr_data <= mem_b[idx];
+                        ntt_coeff_wr_data <= mem_b[idx[LOGN-1:0]];
                     end
 
                     // Set read address for NTT(A) pipeline (also feeds the
