@@ -77,9 +77,10 @@ module poly_mul #(
         ST_NTT_A   = 3'd1,   // run NTT on operand A
         ST_COPY_B  = 3'd2,   // reload operand B into ntt coeff RAM
         ST_NTT_B   = 3'd3,   // run NTT on operand B
-        ST_PMUL    = 3'd4,   // pointwise multiply A_ntt * B_ntt
-        ST_INTT    = 3'd5,   // INTT of product
-        ST_DONE    = 3'd6;
+        ST_PMUL    = 3'd4,   // wait for NTT(B); then pointwise multiply
+        ST_PROD    = 3'd5,   // pointwise multiply A_ntt*B_ntt → mem_b buffer
+        ST_LOADP   = 3'd6,   // load products from mem_b into ntt RAM, launch INTT
+        ST_DONE    = 3'd7;
 
     reg [2:0]      state;
     reg [LOGN:0]   idx;       // needs LOGN+1 bits to count up to N
@@ -115,8 +116,8 @@ module poly_mul #(
         .tw_wr_data    (tw_wr_data),
         .start         (ntt_start),
         .inverse       (ntt_inverse),
-        // Mux: FSM owns rd_addr during COPY_B/INTT; external rd_addr otherwise.
-        .rd_addr       ((state == ST_COPY_B || state == ST_INTT)
+        // Mux: FSM owns rd_addr during COPY_B/PROD; external rd_addr otherwise.
+        .rd_addr       ((state == ST_COPY_B || state == ST_PROD)
                         ? int_rd_addr : rd_addr),
         .rd_data       (ntt_rd_data),
         .done          (ntt_done)
@@ -228,31 +229,46 @@ module poly_mul #(
                 // ── Wait for NTT(B), then pointwise multiply ─────
                 ST_PMUL: begin
                     if (ntt_done) begin
-                        // Pointwise multiply: ntt_coeff[i] = NTT(A)[i] * NTT(B)[i]
-                        // NTT(B) lives in ntt RAM; NTT(A) in mem_ntt
-                        // We write product back into ntt RAM via coeff_wr_en
+                        // NTT(B) now lives in the ntt RAM; NTT(A) in mem_ntt.
                         idx   <= 0;
-                        state <= ST_INTT;
+                        state <= ST_PROD;
                     end
                 end
 
-                // ── Pointwise multiply + launch INTT ─────────────
-                // 2-cycle read latency: set int_rd_addr at idx,
-                // ntt_rd_data for that address available at idx+2.
-                // idx=0,1: prime pipeline (set read addresses).
-                // idx>=2: write product[idx-2] = NTT(A)[idx-2] * NTT(B)[idx-2].
-                // idx=N+1: last write + launch INTT.
-                ST_INTT: begin
+                // ── Pointwise multiply → mem_b buffer ─────────────
+                // READ-ONLY on the ntt RAM (no concurrent writes), so the
+                // 2-cycle read pipeline of NTT(B) is hazard-free:
+                //   set int_rd_addr at idx; ntt_rd_data valid at idx+2.
+                // idx=0,1: prime pipeline.
+                // idx>=2: mem_b[idx-2] = NTT(A)[idx-2] * NTT(B)[idx-2].
+                // We stash products in mem_b (original B no longer needed).
+                ST_PROD: begin
                     if (idx < N)
                         int_rd_addr <= idx[LOGN-1:0];
 
-                    if (idx >= 2) begin
-                        ntt_coeff_wr_en   <= 1'b1;
-                        ntt_coeff_wr_addr <= idx[LOGN-1:0] - 2'd2;
-                        ntt_coeff_wr_data <= mod_mul(mem_ntt[idx - 2], ntt_rd_data, q);
-                    end
+                    if (idx >= 2)
+                        mem_b[idx[LOGN-1:0] - 2'd2] <=
+                            mod_mul(mem_ntt[idx - 2], ntt_rd_data, q);
 
                     if (idx == N + 1) begin
+                        idx   <= 0;
+                        state <= ST_LOADP;
+                    end else begin
+                        idx <= idx + 1'b1;
+                    end
+                end
+
+                // ── Load products from mem_b into ntt RAM, launch INTT ──
+                // Write-only on the ntt RAM (no concurrent reads).
+                ST_LOADP: begin
+                    if (idx < N) begin
+                        ntt_coeff_wr_en   <= 1'b1;
+                        ntt_coeff_wr_addr <= idx[LOGN-1:0];
+                        ntt_coeff_wr_data <= mem_b[idx[LOGN-1:0]];
+                    end
+
+                    if (idx == N) begin
+                        // Extra cycle lets the idx=N-1 write commit before INTT.
                         ntt_inverse <= 1'b1;
                         ntt_start   <= 1'b1;
                         state       <= ST_DONE;
