@@ -102,6 +102,14 @@ module hash_verifier #(
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] h1 [0:N-1];
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] h2 [0:N-1];
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] h3 [0:N-1];
+    reg [Q_WIDTH-1:0] h3_rd;   // registered read of h3 for the compare stage
+
+    // Registered read port for h3 (read process separate from FSM write
+    // → simple-dual-port Block RAM). Shares pa_rd_addr so h3_rd lines up
+    // with poly_add's 2-cycle rd_data latency in ST_COMPARE.
+    always @(posedge clk) begin
+        h3_rd <= h3[pa_rd_addr];
+    end
 
     // ── cipher_hash instance (shared across h1, h2, h3) ─────────
     reg                ch_ct_wr_en;
@@ -238,7 +246,8 @@ module hash_verifier #(
     reg [1:0]      cur_count;
     reg            cmp_ok;
 
-    always @(posedge clk or negedge rst_n) begin
+    // Synchronous reset so h1/h2/h3 infer Block RAM.
+    always @(posedge clk) begin
         if (!rst_n) begin
             state       <= ST_IDLE;
             done        <= 0;
@@ -451,13 +460,14 @@ module hash_verifier #(
                 end
 
                 // ── Compare expected (poly_add out) vs h3 ─────────
-                // poly_add rd_data has 2-cycle latency.
+                // poly_add rd_data has 2-cycle latency; h3_rd is a
+                // registered read of h3 aligned to the same latency.
                 ST_COMPARE: begin
                     if (idx < N)
                         pa_rd_addr <= idx[LOGN-1:0];
                     // compare pa_rd_data (expected[idx-2]) with h3[idx-2]
                     if (idx >= 2) begin
-                        if (pa_rd_data != h3[idx[LOGN-1:0] - 2'd2])
+                        if (pa_rd_data != h3_rd)
                             cmp_ok <= 0;
                     end
 

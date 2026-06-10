@@ -46,19 +46,25 @@ module poly_add #(
 );
     localparam integer N = 1 << LOGN;
 
-    // ── Coefficient RAMs ─────────────────────────────────────────
-    reg [Q_WIDTH-1:0] mem_a [0:N-1];
-    reg [Q_WIDTH-1:0] mem_b [0:N-1];
-    reg [Q_WIDTH-1:0] mem_r [0:N-1];   // result
+    // ── Coefficient RAMs (Block-RAM friendly) ───────────────────
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_a [0:N-1];
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_b [0:N-1];
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_r [0:N-1];   // result
 
     // ── FSM ──────────────────────────────────────────────────────
     localparam [1:0]
-        ST_IDLE = 2'd0,
-        ST_EXEC = 2'd1,
-        ST_DONE = 2'd2;
+        ST_IDLE  = 2'd0,
+        ST_EXEC  = 2'd1,
+        ST_DRAIN = 2'd2,   // drain the read→compute→write pipeline
+        ST_DONE  = 2'd3;
 
     reg [1:0]      state;
-    reg [LOGN-1:0] idx;
+    reg [LOGN:0]   cnt;        // 0..N (read pointer)
+
+    // ── Read/compute/write pipeline registers ───────────────────
+    reg [LOGN-1:0]    widx;       // write address (read addr, delayed 1 cycle)
+    reg               wvalid;     // a result is ready to be written this cycle
+    reg [Q_WIDTH-1:0] a_rd, b_rd; // registered RAM read data
 
     // ── Modular arithmetic (behavioural) ─────────────────────────
     function automatic [Q_WIDTH-1:0] mod_add;
@@ -84,43 +90,65 @@ module poly_add #(
     // ── Latch subtract flag at start ─────────────────────────────
     reg sub_r;
 
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            state   <= ST_IDLE;
-            done    <= 1'b0;
-            idx     <= 0;
-            sub_r   <= 1'b0;
-            rd_data <= 0;
-        end else begin
-            // Write ports — always active
-            if (a_wr_en) mem_a[a_wr_addr] <= a_wr_data;
-            if (b_wr_en) mem_b[b_wr_addr] <= b_wr_data;
+    // Combinational RAM read address: stream coefficients during ST_EXEC.
+    wire [LOGN-1:0] radr = (state == ST_EXEC) ? cnt[LOGN-1:0] : {LOGN{1'b0}};
 
-            // Read port — 1-cycle latency
-            rd_data <= mem_r[rd_addr];
+    // ── mem_a: write port + registered read port (simple dual-port) ──
+    always @(posedge clk) begin
+        if (a_wr_en) mem_a[a_wr_addr] <= a_wr_data;
+        a_rd <= mem_a[radr];
+    end
+
+    // ── mem_b: write port + registered read port ─────────────────
+    always @(posedge clk) begin
+        if (b_wr_en) mem_b[b_wr_addr] <= b_wr_data;
+        b_rd <= mem_b[radr];
+    end
+
+    // ── mem_r: result write port + registered read (output) port ──
+    always @(posedge clk) begin
+        if (wvalid)
+            mem_r[widx] <= sub_r ? mod_sub(a_rd, b_rd, q)
+                                 : mod_add(a_rd, b_rd, q);
+        rd_data <= mem_r[rd_addr];
+    end
+
+    // ── Control FSM (synchronous reset so the RAMs infer Block RAM) ──
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            state  <= ST_IDLE;
+            done   <= 1'b0;
+            cnt    <= 0;
+            sub_r  <= 1'b0;
+            widx   <= 0;
+            wvalid <= 1'b0;
+        end else begin
+            // Pipeline: the value read at address 'cnt' (latched into
+            // a_rd/b_rd next cycle) is written to mem_r[cnt] one cycle later.
+            wvalid <= 1'b0;
+            done   <= 1'b0;
 
             case (state)
 
                 ST_IDLE: begin
-                    done <= 1'b0;
                     if (start) begin
-                        idx   <= 0;
+                        cnt   <= 0;
                         sub_r <= subtract;
                         state <= ST_EXEC;
                     end
                 end
 
-                // Process one coefficient per cycle
+                // Issue one read per cycle; the matching write is staged.
                 ST_EXEC: begin
-                    mem_r[idx] <= sub_r
-                        ? mod_sub(mem_a[idx], mem_b[idx], q)
-                        : mod_add(mem_a[idx], mem_b[idx], q);
+                    widx   <= cnt[LOGN-1:0];
+                    wvalid <= 1'b1;
+                    if (cnt == N-1) state <= ST_DRAIN;
+                    else            cnt   <= cnt + 1'b1;
+                end
 
-                    if (idx == (N-1)) begin
-                        state <= ST_DONE;
-                    end else begin
-                        idx <= idx + 1'b1;
-                    end
+                // One extra cycle for the final read→compute→write to commit.
+                ST_DRAIN: begin
+                    state <= ST_DONE;
                 end
 
                 ST_DONE: begin

@@ -64,9 +64,16 @@ module poly_mul #(
     localparam integer N = 1 << LOGN;
 
     // ── Internal coefficient RAMs ────────────────────────────────
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_a   [0:N-1];   // original a
+    // mem_b  : operand B (loaded), then overwritten with the products.
+    // mem_ntt: NTT(A) held while NTT(B) is computed.
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_b   [0:N-1];   // original b / products
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_ntt [0:N-1];   // NTT working buffer
+
+    // mem_ntt dedicated dual-port control + registered read output
+    reg                mem_ntt_we;
+    reg  [LOGN-1:0]    mem_ntt_wa;
+    reg  [Q_WIDTH-1:0] mem_ntt_wd;
+    reg  [Q_WIDTH-1:0] mem_ntt_rd;
 
     // ── Twiddle RAM (forwarded directly to ntt instance) ────────
     // We let the ntt module own it; we just wire the write port.
@@ -146,8 +153,23 @@ module poly_mul #(
         end
     endfunction
 
-    // ── FSM ──────────────────────────────────────────────────────
-    always @(posedge clk or negedge rst_n) begin
+    // ── mem_ntt: dedicated dual-port RAM process ─────────────────
+    // Write port: NTT(A) save during ST_COPY_B.
+    // Read port : shares int_rd_addr with the ntt read, so mem_ntt_rd
+    //             lines up cycle-for-cycle with ntt_rd_data (NTT(B)).
+    always @* begin
+        mem_ntt_we = (state == ST_COPY_B) && (idx >= 2);
+        mem_ntt_wa = idx[LOGN-1:0] - 2'd2;
+        mem_ntt_wd = ntt_rd_data;
+    end
+
+    always @(posedge clk) begin
+        if (mem_ntt_we) mem_ntt[mem_ntt_wa] <= mem_ntt_wd;
+        mem_ntt_rd <= mem_ntt[int_rd_addr];
+    end
+
+    // ── FSM (synchronous reset so mem_b infers Block RAM) ────────
+    always @(posedge clk) begin
         if (!rst_n) begin
             state             <= ST_IDLE;
             done              <= 1'b0;
@@ -158,8 +180,7 @@ module poly_mul #(
             ntt_coeff_wr_addr <= 0;
             ntt_coeff_wr_data <= 0;
         end else begin
-            // Shadow writes to local RAMs for later use
-            if (a_wr_en) mem_a[a_wr_addr] <= a_wr_data;
+            // Shadow write: stash operand B for the NTT(B) reload step.
             if (b_wr_en) mem_b[b_wr_addr] <= b_wr_data;
 
             // Default: deassert pulse signals
@@ -203,13 +224,10 @@ module poly_mul #(
                         ntt_coeff_wr_data <= mem_b[idx];
                     end
 
-                    // Set read address for NTT(A) pipeline
+                    // Set read address for NTT(A) pipeline (also feeds the
+                    // mem_ntt dedicated write/read process above).
                     if (idx < N)
                         int_rd_addr <= idx[LOGN-1:0];
-
-                    // Save NTT(A) data (2-cycle pipeline delay)
-                    if (idx >= 2)
-                        mem_ntt[idx[LOGN-1:0] - 2'd2] <= ntt_rd_data;
 
                     if (idx == N + 1) begin
                         idx   <= 0;
@@ -248,7 +266,7 @@ module poly_mul #(
 
                     if (idx >= 2)
                         mem_b[idx[LOGN-1:0] - 2'd2] <=
-                            mod_mul(mem_ntt[idx - 2], ntt_rd_data, q);
+                            mod_mul(mem_ntt_rd, ntt_rd_data, q);
 
                     if (idx == N + 1) begin
                         idx   <= 0;

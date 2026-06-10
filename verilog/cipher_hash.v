@@ -82,8 +82,8 @@ module cipher_hash #(
 
     (* ram_style = "block" *)
     reg [Q_WIDTH-1:0] ct [0:CT_DEPTH-1];
-    reg [Q_WIDTH-1:0] mem_r  [0:N-1];   // r_pow (starts as r, squared each iteration)
-    reg [Q_WIDTH-1:0] mem_h  [0:N-1];   // accumulator
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_r  [0:N-1];   // r_pow (squared each iter)
+    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_h  [0:N-1];   // accumulator
 
     function integer ct_lin;
         input [1:0]      comp;
@@ -93,11 +93,12 @@ module cipher_hash #(
         end
     endfunction
 
-    // ── Write to ct or r RAMs ────────────────────────────────────
+    // ── Write to ct RAM ──────────────────────────────────────────
+    // (mem_r is written only inside the FSM — single writer — so it
+    //  infers a single Block RAM rather than a multi-driven net.)
     integer wi;
     always @(posedge clk) begin
         if (ct_wr_en) ct[ct_lin(ct_sel, ct_wr_addr)] <= ct_wr_data;
-        if (r_wr_en)  mem_r[r_wr_addr]               <= r_wr_data;
     end
 
     // ── poly_mul sub-instance ────────────────────────────────────
@@ -204,7 +205,8 @@ module cipher_hash #(
         rd_data <= mem_h[rd_addr];
     end
 
-    always @(posedge clk or negedge rst_n) begin
+    // Synchronous reset so mem_r / mem_h infer Block RAM.
+    always @(posedge clk) begin
         if (!rst_n) begin
             state       <= ST_IDLE;
             done        <= 1'b0;
@@ -218,6 +220,9 @@ module cipher_hash #(
             pa_b_wr_en  <= 0;
             pa_start    <= 0;
         end else begin
+            // r-polynomial load (single writer of mem_r lives in this block)
+            if (r_wr_en) mem_r[r_wr_addr] <= r_wr_data;
+
             // Default deassert
             pm_a_wr_en <= 0;
             pm_b_wr_en <= 0;

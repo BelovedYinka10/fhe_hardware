@@ -258,10 +258,14 @@ module ntt #(
     end
 
     // ── Coefficient RAM: true dual-port, registered reads ─────────
+    // Described as two single-port processes (one per port) — this is
+    // the canonical Xilinx true-dual-port template that infers RAMB.
     always @(posedge clk) begin
         if (cwe_a) coeff[caddr_a] <= cdi_a;
         cdo_a <= coeff[caddr_a];
+    end
 
+    always @(posedge clk) begin
         if (cwe_b) coeff[caddr_b] <= cdi_b;
         cdo_b <= coeff[caddr_b];
     end
