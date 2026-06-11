@@ -93,21 +93,16 @@ module cipher_hash #(
         end
     endfunction
 
-    // ── Write to ct RAM ──────────────────────────────────────────
-    // (mem_r is written only inside the FSM — single writer — so it
-    //  infers a single Block RAM rather than a multi-driven net.)
-    integer wi;
-    always @(posedge clk) begin
-        if (ct_wr_en) ct[ct_lin(ct_sel, ct_wr_addr)] <= ct_wr_data;
-    end
+    // (ct / mem_r / mem_h RAM ports are defined below as dedicated
+    //  Block-RAM processes.)
 
     // ── poly_mul sub-instance ────────────────────────────────────
     reg                pm_a_wr_en;
     reg  [LOGN-1:0]    pm_a_wr_addr;
-    reg  [Q_WIDTH-1:0] pm_a_wr_data;
+    wire [Q_WIDTH-1:0] pm_a_wr_data;   // driven by dedicated RAM read regs
     reg                pm_b_wr_en;
     reg  [LOGN-1:0]    pm_b_wr_addr;
-    reg  [Q_WIDTH-1:0] pm_b_wr_data;
+    wire [Q_WIDTH-1:0] pm_b_wr_data;   // driven by dedicated RAM read regs
     reg                pm_start;
     wire               pm_done;
     reg  [LOGN-1:0]    pm_rd_addr;
@@ -143,7 +138,7 @@ module cipher_hash #(
     reg  [Q_WIDTH-1:0] pa_a_wr_data;
     reg                pa_b_wr_en;
     reg  [LOGN-1:0]    pa_b_wr_addr;
-    reg  [Q_WIDTH-1:0] pa_b_wr_data;
+    wire [Q_WIDTH-1:0] pa_b_wr_data;   // driven by dedicated mem_h read reg
     reg                pa_start;
     wire               pa_done;
     reg  [LOGN-1:0]    pa_rd_addr;
@@ -200,7 +195,75 @@ module cipher_hash #(
     reg [LOGN:0]   idx;         // loop counter (needs LOGN+1 bits for pipeline drain)
     reg [1:0]      ct_last;
 
-    // ── Result read port ───────────────────────────────────────
+    // ════════════════════════════════════════════════════════════
+    //  Dedicated Block-RAM read/write ports
+    //  Each RAM gets its own registered read output (never shared
+    //  between two RAMs) so Vivado can infer Block RAM.  The shared
+    //  poly_mul/poly_add data inputs are combinational muxes of those
+    //  registered outputs, which keeps the original 1-cycle timing.
+    // ════════════════════════════════════════════════════════════
+    reg  [Q_WIDTH-1:0] ct_rd, memr_rd, memh_rd;   // registered read outputs
+    reg  [LOGN-1:0]    ct_ra, memr_ra, memh_ra;   // combinational read addrs
+    reg                memr_we, memh_we;          // combinational write ctrl
+    reg  [LOGN-1:0]    memr_wa, memh_wa;
+    reg  [Q_WIDTH-1:0] memr_wd, memh_wd;
+
+    // ── Combinational read-address / write-control selection ─────
+    always @* begin
+        // ct read: ST_INIT reads ct[ct_last][idx]; ST_LOAD_MUL reads ct[horner_i][idx]
+        if (state == ST_INIT) ct_ra = ct_lin(ct_last,  idx[LOGN-1:0]);
+        else                  ct_ra = ct_lin(horner_i, idx[LOGN-1:0]);
+
+        // mem_r read address (squaring / multiply load streams at idx)
+        memr_ra = idx[LOGN-1:0];
+
+        // mem_h read address: ST_LOAD_ADD reads mem_h[idx-2]
+        memh_ra = idx[LOGN-1:0] - 2'd2;
+
+        // mem_r write: r load, or squared r_pow store (ST_SAVE_SQR, idx>=2)
+        if (r_wr_en) begin
+            memr_we = 1'b1; memr_wa = r_wr_addr;          memr_wd = r_wr_data;
+        end else if (state == ST_SAVE_SQR && idx >= 2) begin
+            memr_we = 1'b1; memr_wa = idx[LOGN-1:0]-2'd2;  memr_wd = pm_rd_data;
+        end else begin
+            memr_we = 1'b0; memr_wa = idx[LOGN-1:0];       memr_wd = pm_rd_data;
+        end
+
+        // mem_h write: ST_INIT copies ct[ct_last] (re-timed -1),
+        //              ST_SAVE stores the poly_add result (idx-2)
+        if (state == ST_INIT && idx >= 1) begin
+            memh_we = 1'b1; memh_wa = idx[LOGN-1:0]-1'b1;  memh_wd = ct_rd;
+        end else if (state == ST_SAVE && idx >= 2) begin
+            memh_we = 1'b1; memh_wa = idx[LOGN-1:0]-2'd2;  memh_wd = pa_rd_data;
+        end else begin
+            memh_we = 1'b0; memh_wa = idx[LOGN-1:0];       memh_wd = pa_rd_data;
+        end
+    end
+
+    // ── ct RAM: write (host) + registered read ───────────────────
+    always @(posedge clk) begin
+        if (ct_wr_en) ct[ct_lin(ct_sel, ct_wr_addr)] <= ct_wr_data;
+        ct_rd <= ct[ct_ra];
+    end
+
+    // ── mem_r RAM: write + registered read ───────────────────────
+    always @(posedge clk) begin
+        if (memr_we) mem_r[memr_wa] <= memr_wd;
+        memr_rd <= mem_r[memr_ra];
+    end
+
+    // ── mem_h RAM: write + registered read (port A) ──────────────
+    always @(posedge clk) begin
+        if (memh_we) mem_h[memh_wa] <= memh_wd;
+        memh_rd <= mem_h[memh_ra];
+    end
+
+    // ── Shared data inputs = combinational muxes of read outputs ──
+    assign pm_a_wr_data = (state == ST_LOAD_SQR) ? memr_rd : ct_rd;
+    assign pm_b_wr_data = memr_rd;
+    assign pa_b_wr_data = memh_rd;
+
+    // ── mem_h result read port (port B) ──────────────────────────
     always @(posedge clk) begin
         rd_data <= mem_h[rd_addr];
     end
@@ -220,8 +283,7 @@ module cipher_hash #(
             pa_b_wr_en  <= 0;
             pa_start    <= 0;
         end else begin
-            // r-polynomial load (single writer of mem_r lives in this block)
-            if (r_wr_en) mem_r[r_wr_addr] <= r_wr_data;
+            // (mem_r / mem_h writes handled in the dedicated RAM processes.)
 
             // Default deassert
             pm_a_wr_en <= 0;
@@ -244,10 +306,10 @@ module cipher_hash #(
                 end
 
                 // ── Copy ct[ct_last] into mem_h (accumulator) ────
+                // ct read at idx, mem_h[idx-1] written by the dedicated
+                // process one cycle later, so run idx 0..N.
                 ST_INIT: begin
-                    mem_h[idx] <= ct[ct_lin(ct_last, idx[LOGN-1:0])];
-
-                    if (idx == N-1) begin
+                    if (idx == N) begin
                         idx      <= 0;
                         horner_i <= ct_last - 2'd1;
                         // If only 1 component, hash = ct[0], done.
@@ -259,13 +321,11 @@ module cipher_hash #(
 
                 // ── Load ct[horner_i] → pm_A, mem_r (r_pow) → pm_B ──
                 ST_LOAD_MUL: begin
+                    // data: pm_a_wr_data=ct_rd, pm_b_wr_data=memr_rd (wires)
                     pm_a_wr_en   <= 1'b1;
                     pm_a_wr_addr <= idx;
-                    pm_a_wr_data <= ct[ct_lin(horner_i, idx[LOGN-1:0])];
-
                     pm_b_wr_en   <= 1'b1;
                     pm_b_wr_addr <= idx;
-                    pm_b_wr_data <= mem_r[idx];
 
                     if (idx == N-1) begin
                         idx      <= 0;
@@ -295,13 +355,13 @@ module cipher_hash #(
                     end
 
                     if (idx >= 2) begin
+                        // pa_a_wr_data=pm_rd_data (reg), pa_b_wr_data=memh_rd (wire)
                         pa_a_wr_en   <= 1'b1;
                         pa_a_wr_addr <= idx[LOGN-1:0] - 2'd2;
                         pa_a_wr_data <= pm_rd_data;
 
                         pa_b_wr_en   <= 1'b1;
                         pa_b_wr_addr <= idx[LOGN-1:0] - 2'd2;
-                        pa_b_wr_data <= mem_h[idx[LOGN-1:0] - 2'd2];
                     end
 
                     if (idx == N + 1) begin
@@ -326,12 +386,9 @@ module cipher_hash #(
                 // idx=0,1: prime pipeline. idx>=2: save data[idx-2].
                 // idx=N+1: decide next state.
                 ST_SAVE: begin
+                    // mem_h[idx-2] <= pa_rd_data handled by dedicated process.
                     if (idx < N) begin
                         pa_rd_addr <= idx[LOGN-1:0];
-                    end
-
-                    if (idx >= 2) begin
-                        mem_h[idx[LOGN-1:0] - 2'd2] <= pa_rd_data;
                     end
 
                     if (idx == N + 1) begin
@@ -345,13 +402,11 @@ module cipher_hash #(
 
                 // ── Load mem_r → pm_A and pm_B (squaring r_pow) ──
                 ST_LOAD_SQR: begin
+                    // data: pm_a_wr_data=memr_rd, pm_b_wr_data=memr_rd (wires)
                     pm_a_wr_en   <= 1'b1;
                     pm_a_wr_addr <= idx;
-                    pm_a_wr_data <= mem_r[idx];
-
                     pm_b_wr_en   <= 1'b1;
                     pm_b_wr_addr <= idx;
-                    pm_b_wr_data <= mem_r[idx];
 
                     if (idx == N-1) begin
                         idx      <= 0;
@@ -375,12 +430,9 @@ module cipher_hash #(
                 // idx=0,1: prime pipeline. idx>=2: save data[idx-2].
                 // idx=N+1: decrement horner_i, back to LOAD_MUL.
                 ST_SAVE_SQR: begin
+                    // mem_r[idx-2] <= pm_rd_data handled by dedicated process.
                     if (idx < N) begin
                         pm_rd_addr <= idx[LOGN-1:0];
-                    end
-
-                    if (idx >= 2) begin
-                        mem_r[idx[LOGN-1:0] - 2'd2] <= pm_rd_data;
                     end
 
                     if (idx == N + 1) begin

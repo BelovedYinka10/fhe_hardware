@@ -11,7 +11,7 @@ Vhash_verifier__Syms::Vhash_verifier__Syms(VerilatedContext* contextp, const cha
     , TOP{this, namep}
 {
     // Check resources
-    Verilated::stackCheck(11626);
+    Verilated::stackCheck(11518);
     // Setup sub module instances
     // Configure time unit / time precision
     _vm_contextp__->timeunit(-9);

@@ -149,10 +149,10 @@ module hash_verifier #(
     // ── poly_mul for expected = h1 * h2 ─────────────────────────
     reg                pm_a_wr_en;
     reg  [LOGN-1:0]    pm_a_wr_addr;
-    reg  [Q_WIDTH-1:0] pm_a_wr_data;
+    wire [Q_WIDTH-1:0] pm_a_wr_data;   // = h1_rd (dedicated read reg)
     reg                pm_b_wr_en;
     reg  [LOGN-1:0]    pm_b_wr_addr;
-    reg  [Q_WIDTH-1:0] pm_b_wr_data;
+    wire [Q_WIDTH-1:0] pm_b_wr_data;   // = h2_rd (dedicated read reg)
     reg                pm_start;
     wire               pm_done;
     reg  [LOGN-1:0]    pm_rd_addr;
@@ -188,7 +188,7 @@ module hash_verifier #(
     reg  [Q_WIDTH-1:0] pa_a_wr_data;
     reg                pa_b_wr_en;
     reg  [LOGN-1:0]    pa_b_wr_addr;
-    reg  [Q_WIDTH-1:0] pa_b_wr_data;
+    wire [Q_WIDTH-1:0] pa_b_wr_data;   // = h2_rd (dedicated read reg)
     reg                pa_start;
     wire               pa_done;
     reg  [LOGN-1:0]    pa_rd_addr;
@@ -214,13 +214,48 @@ module hash_verifier #(
         .done       (pa_done)
     );
 
-    // ── Registered read port for h3 ──────────────────────────────
-    // Read process separate from the FSM write → simple-dual-port
-    // Block RAM. Shares pa_rd_addr so h3_rd lines up with poly_add's
-    // 2-cycle rd_data latency in ST_COMPARE. (No reset on h3_rd.)
-    always @(posedge clk) begin
-        h3_rd <= h3[pa_rd_addr];
+    // ════════════════════════════════════════════════════════════
+    //  Dedicated Block-RAM ports for h1/h2/h3
+    //  Each gets its own write + registered read in a single process
+    //  (single-process simple-dual-port → infers Block RAM). The shared
+    //  poly_mul/poly_add data inputs are combinational muxes of the
+    //  registered read outputs, preserving the original 1-cycle timing.
+    // ════════════════════════════════════════════════════════════
+    reg  [Q_WIDTH-1:0] h1_rd, h2_rd;     // h3_rd declared above
+    reg  [LOGN-1:0]    h1_ra, h2_ra;     // combinational read addresses
+    reg                h1_we, h2_we, h3_we;
+    reg  [LOGN-1:0]    h1_wa, h2_wa, h3_wa;
+
+    always @* begin
+        // read addresses
+        h1_ra = idx[LOGN-1:0];                                  // ST_LOAD_MUL
+        h2_ra = (state == ST_LOAD_ADD) ? (idx[LOGN-1:0]-2'd2)   // ST_LOAD_ADD
+                                       :  idx[LOGN-1:0];         // ST_LOAD_MUL
+        // write controls (save the cipher_hash result, 2-cycle latency)
+        h1_we = (state == ST_SAVE_H1) && (idx >= 2);
+        h2_we = (state == ST_SAVE_H2) && (idx >= 2);
+        h3_we = (state == ST_SAVE_H3) && (idx >= 2);
+        h1_wa = idx[LOGN-1:0] - 2'd2;
+        h2_wa = idx[LOGN-1:0] - 2'd2;
+        h3_wa = idx[LOGN-1:0] - 2'd2;
     end
+
+    always @(posedge clk) begin
+        if (h1_we) h1[h1_wa] <= ch_rd_data;
+        h1_rd <= h1[h1_ra];
+    end
+    always @(posedge clk) begin
+        if (h2_we) h2[h2_wa] <= ch_rd_data;
+        h2_rd <= h2[h2_ra];
+    end
+    always @(posedge clk) begin
+        if (h3_we) h3[h3_wa] <= ch_rd_data;
+        h3_rd <= h3[pa_rd_addr];        // read shares poly_add's rd address
+    end
+
+    assign pm_a_wr_data = h1_rd;
+    assign pm_b_wr_data = h2_rd;
+    assign pa_b_wr_data = h2_rd;
 
     // ── FSM ──────────────────────────────────────────────────────
     localparam [3:0]
@@ -331,10 +366,9 @@ module hash_verifier #(
                 // cipher_hash rd_data has 2-cycle latency (NB addr + NB read).
                 // idx=0,1: prime pipeline. idx>=2: save h1[idx-2]. idx=N+1: done.
                 ST_SAVE_H1: begin
+                    // h1[idx-2] <= ch_rd_data handled by dedicated h1 process.
                     if (idx < N)
                         ch_rd_addr <= idx[LOGN-1:0];
-                    if (idx >= 2)
-                        h1[idx[LOGN-1:0] - 2'd2] <= ch_rd_data;
                     if (idx == N + 1) begin
                         idx    <= 0;
                         comp_i <= 0;
@@ -365,10 +399,9 @@ module hash_verifier #(
                 end
 
                 ST_SAVE_H2: begin
+                    // h2[idx-2] <= ch_rd_data handled by dedicated h2 process.
                     if (idx < N)
                         ch_rd_addr <= idx[LOGN-1:0];
-                    if (idx >= 2)
-                        h2[idx[LOGN-1:0] - 2'd2] <= ch_rd_data;
                     if (idx == N + 1) begin
                         idx    <= 0;
                         comp_i <= 0;
@@ -399,10 +432,9 @@ module hash_verifier #(
                 end
 
                 ST_SAVE_H3: begin
+                    // h3[idx-2] <= ch_rd_data handled by dedicated h3 process.
                     if (idx < N)
                         ch_rd_addr <= idx[LOGN-1:0];
-                    if (idx >= 2)
-                        h3[idx[LOGN-1:0] - 2'd2] <= ch_rd_data;
                     if (idx == N + 1) begin
                         idx   <= 0;
                         state <= ST_LOAD_MUL;
@@ -411,13 +443,11 @@ module hash_verifier #(
 
                 // ── Load h1, h2 into poly_mul ─────────────────────
                 ST_LOAD_MUL: begin
+                    // data: pm_a_wr_data=h1_rd, pm_b_wr_data=h2_rd (wires)
                     pm_a_wr_en   <= 1;
                     pm_a_wr_addr <= idx;
-                    pm_a_wr_data <= h1[idx];
-
                     pm_b_wr_en   <= 1;
                     pm_b_wr_addr <= idx;
-                    pm_b_wr_data <= h2[idx];
 
                     if (idx == N-1) begin
                         idx      <= 0;
@@ -437,13 +467,13 @@ module hash_verifier #(
                         pm_rd_addr <= idx[LOGN-1:0];
 
                     if (idx >= 2) begin
+                        // pa_a_wr_data=pm_rd_data (reg), pa_b_wr_data=h2_rd (wire)
                         pa_a_wr_en   <= 1;
                         pa_a_wr_addr <= idx[LOGN-1:0] - 2'd2;
                         pa_a_wr_data <= pm_rd_data;   // h1*h2
 
                         pa_b_wr_en   <= 1;
                         pa_b_wr_addr <= idx[LOGN-1:0] - 2'd2;
-                        pa_b_wr_data <= h2[idx[LOGN-1:0] - 2'd2];
                     end
 
                     if (idx == N + 1) begin
