@@ -23,7 +23,7 @@ module tb_hash_verifier;
     // Timeout: hash_verifier runs 3 cipher_hashes + 1 poly_mul + 1 poly_add + compare
     // Each cipher_hash with 3 components: ~4 poly_muls + 2 poly_adds
     // Total: ~15 poly_muls + ~8 poly_adds ≈ 15*(2*N*LOGN+2*N) + small
-    localparam integer MAX_CYCLES = 5000000;
+    localparam integer MAX_CYCLES = 20000000;
 
     // ── Clock and reset ─────────────────────────────────────────
     reg clk;
