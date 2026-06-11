@@ -75,6 +75,12 @@ module poly_mul #(
     reg  [Q_WIDTH-1:0] mem_ntt_wd;
     reg  [Q_WIDTH-1:0] mem_ntt_rd;
 
+    // mem_b dedicated dual-port control (read output = ntt_coeff_wr_data)
+    reg                mem_b_we;
+    reg  [LOGN-1:0]    mem_b_wa;
+    reg  [Q_WIDTH-1:0] mem_b_wd;
+    reg  [LOGN-1:0]    mem_b_ra;
+
     // ── Twiddle RAM (forwarded directly to ntt instance) ────────
     // We let the ntt module own it; we just wire the write port.
 
@@ -168,7 +174,30 @@ module poly_mul #(
         mem_ntt_rd <= mem_ntt[int_rd_addr];
     end
 
-    // ── FSM (synchronous reset so mem_b infers Block RAM) ────────
+    // ── mem_b: dedicated simple-dual-port RAM process ────────────
+    // Write: operand-B load (b_wr_*) OR pointwise product (ST_PROD).
+    // Read : address idx → ntt_coeff_wr_data (the B-reload / product
+    //        stream into the ntt RAM during ST_COPY_B / ST_LOADP).
+    // Same single-process template as mem_ntt → infers Block RAM.
+    always @* begin
+        if (b_wr_en) begin
+            mem_b_we = 1'b1;
+            mem_b_wa = b_wr_addr;
+            mem_b_wd = b_wr_data;
+        end else begin
+            mem_b_we = (state == ST_PROD) && (idx >= 2);
+            mem_b_wa = idx[LOGN-1:0] - 2'd2;
+            mem_b_wd = mod_mul(mem_ntt_rd, ntt_rd_data, q);
+        end
+        mem_b_ra = idx[LOGN-1:0];
+    end
+
+    always @(posedge clk) begin
+        if (mem_b_we) mem_b[mem_b_wa] <= mem_b_wd;
+        ntt_coeff_wr_data <= mem_b[mem_b_ra];
+    end
+
+    // ── FSM (synchronous reset; coefficient RAMs are dedicated procs) ──
     always @(posedge clk) begin
         if (!rst_n) begin
             state             <= ST_IDLE;
@@ -183,8 +212,7 @@ module poly_mul #(
             // prevents Block-RAM inference (it's a don't-care when
             // ntt_coeff_wr_en == 0, which the reset already guarantees).
         end else begin
-            // Shadow write: stash operand B for the NTT(B) reload step.
-            if (b_wr_en) mem_b[b_wr_addr] <= b_wr_data;
+            // (mem_b writes/reads handled in the dedicated process above.)
 
             // Default: deassert pulse signals
             ntt_start       <= 1'b0;
@@ -220,11 +248,12 @@ module poly_mul #(
                 // Save NTT(A)[idx-2] for idx >= 2.
                 // Loop runs 0..N+1.
                 ST_COPY_B: begin
-                    // Write B[idx] into ntt coeff RAM
+                    // Write B[idx] into ntt coeff RAM (data = mem_b[idx],
+                    // supplied by the dedicated mem_b read process via
+                    // mem_b_ra = idx → ntt_coeff_wr_data, same 1-cycle latency).
                     if (idx < N) begin
                         ntt_coeff_wr_en   <= 1'b1;
                         ntt_coeff_wr_addr <= idx[LOGN-1:0];
-                        ntt_coeff_wr_data <= mem_b[idx[LOGN-1:0]];
                     end
 
                     // Set read address for NTT(A) pipeline (also feeds the
@@ -267,9 +296,8 @@ module poly_mul #(
                     if (idx < N)
                         int_rd_addr <= idx[LOGN-1:0];
 
-                    if (idx >= 2)
-                        mem_b[idx[LOGN-1:0] - 2'd2] <=
-                            mod_mul(mem_ntt_rd, ntt_rd_data, q);
+                    // (product write into mem_b[idx-2] handled by the
+                    //  dedicated mem_b process above.)
 
                     if (idx == N + 1) begin
                         idx   <= 0;
@@ -282,10 +310,10 @@ module poly_mul #(
                 // ── Load products from mem_b into ntt RAM, launch INTT ──
                 // Write-only on the ntt RAM (no concurrent reads).
                 ST_LOADP: begin
+                    // Data = mem_b[idx] from the dedicated mem_b read process.
                     if (idx < N) begin
                         ntt_coeff_wr_en   <= 1'b1;
                         ntt_coeff_wr_addr <= idx[LOGN-1:0];
-                        ntt_coeff_wr_data <= mem_b[idx[LOGN-1:0]];
                     end
 
                     if (idx == N) begin

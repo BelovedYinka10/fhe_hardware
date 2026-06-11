@@ -348,6 +348,30 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
     VlWide<3>/*95:0*/ __Vtemp_98;
     VlWide<3>/*95:0*/ __Vtemp_101;
     VlWide<3>/*95:0*/ __Vtemp_102;
+    VlWide<3>/*95:0*/ __Vtemp_104;
+    VlWide<3>/*95:0*/ __Vtemp_105;
+    VlWide<3>/*95:0*/ __Vtemp_106;
+    VlWide<5>/*159:0*/ __Vtemp_107;
+    VlWide<5>/*159:0*/ __Vtemp_108;
+    VlWide<3>/*95:0*/ __Vtemp_110;
+    VlWide<3>/*95:0*/ __Vtemp_111;
+    VlWide<3>/*95:0*/ __Vtemp_112;
+    VlWide<3>/*95:0*/ __Vtemp_114;
+    VlWide<3>/*95:0*/ __Vtemp_115;
+    VlWide<3>/*95:0*/ __Vtemp_118;
+    VlWide<3>/*95:0*/ __Vtemp_119;
+    VlWide<3>/*95:0*/ __Vtemp_121;
+    VlWide<3>/*95:0*/ __Vtemp_122;
+    VlWide<3>/*95:0*/ __Vtemp_123;
+    VlWide<5>/*159:0*/ __Vtemp_124;
+    VlWide<5>/*159:0*/ __Vtemp_125;
+    VlWide<3>/*95:0*/ __Vtemp_127;
+    VlWide<3>/*95:0*/ __Vtemp_128;
+    VlWide<3>/*95:0*/ __Vtemp_129;
+    VlWide<3>/*95:0*/ __Vtemp_131;
+    VlWide<3>/*95:0*/ __Vtemp_132;
+    VlWide<3>/*95:0*/ __Vtemp_135;
+    VlWide<3>/*95:0*/ __Vtemp_136;
     // Body
     vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_padd__DOT__radr 
         = ((1U == (IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_padd__DOT__state))
@@ -363,6 +387,180 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
     vlSelfRef.__VdfgRegularize_hebeb780c_0_8 = (0x000001ffffffffffULL 
                                                 & (vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__u_r 
                                                    + vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__v_r));
+    if (vlSelfRef.hash_verifier__DOT__u_ch__DOT__pm_b_wr_en) {
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_b_wd 
+            = vlSelfRef.hash_verifier__DOT__u_ch__DOT__pm_b_wr_data;
+    } else {
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq 
+            = vlSelfRef.q;
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__b 
+            = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__cdo;
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__a 
+            = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt_rd;
+        __Vtemp_2[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__a);
+        __Vtemp_2[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__a 
+                                 >> 0x00000020U));
+        __Vtemp_2[2U] = 0U;
+        __Vtemp_3[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__b);
+        __Vtemp_3[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__b 
+                                 >> 0x00000020U));
+        __Vtemp_3[2U] = 0U;
+        VL_MUL_W(3, __Vtemp_4, __Vtemp_2, __Vtemp_3);
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p[0U] 
+            = __Vtemp_4[0U];
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p[1U] 
+            = __Vtemp_4[1U];
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p[2U] 
+            = (0x0000ffffU & __Vtemp_4[2U]);
+        __Vtemp_5[0U] = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p[0U];
+        __Vtemp_5[1U] = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p[1U];
+        __Vtemp_5[2U] = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p[2U];
+        __Vtemp_5[3U] = 0U;
+        __Vtemp_5[4U] = 0U;
+        __Vtemp_6[0U] = vlSelfRef.barrett_m[0U];
+        __Vtemp_6[1U] = vlSelfRef.barrett_m[1U];
+        __Vtemp_6[2U] = vlSelfRef.barrett_m[2U];
+        __Vtemp_6[3U] = 0U;
+        __Vtemp_6[4U] = 0U;
+        VL_MUL_W(5, vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__pm, __Vtemp_5, __Vtemp_6);
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__t 
+            = (0x000001ffffffffffULL & (((QData)((IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__pm[3U])) 
+                                         << 0x00000010U) 
+                                        | ((QData)((IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__pm[2U])) 
+                                           >> 0x00000010U)));
+        __Vtemp_8[0U] = (IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__t);
+        __Vtemp_8[1U] = (IData)((vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__t 
+                                 >> 0x00000020U));
+        __Vtemp_8[2U] = 0U;
+        __Vtemp_9[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq);
+        __Vtemp_9[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq 
+                                 >> 0x00000020U));
+        __Vtemp_9[2U] = 0U;
+        VL_MUL_W(3, __Vtemp_10, __Vtemp_8, __Vtemp_9);
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__tq[0U] 
+            = __Vtemp_10[0U];
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__tq[1U] 
+            = __Vtemp_10[1U];
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__tq[2U] 
+            = (0x0000ffffU & __Vtemp_10[2U]);
+        VL_SUB_W(3, __Vtemp_12, vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__p, vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__tq);
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[0U] 
+            = __Vtemp_12[0U];
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[1U] 
+            = __Vtemp_12[1U];
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[2U] 
+            = (0x0000ffffU & __Vtemp_12[2U]);
+        __Vtemp_13[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq);
+        __Vtemp_13[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq 
+                                  >> 0x00000020U));
+        __Vtemp_13[2U] = 0U;
+        if (VL_GTE_W(3, vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r, __Vtemp_13)) {
+            __Vtemp_16[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq);
+            __Vtemp_16[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq 
+                                      >> 0x00000020U));
+            __Vtemp_16[2U] = 0U;
+            VL_SUB_W(3, __Vtemp_17, vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r, __Vtemp_16);
+            vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[0U] 
+                = __Vtemp_17[0U];
+            vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[1U] 
+                = __Vtemp_17[1U];
+            vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[2U] 
+                = (0x0000ffffU & __Vtemp_17[2U]);
+        }
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__Vfuncout 
+            = (0x000000ffffffffffULL & (((QData)((IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[1U])) 
+                                         << 0x00000020U) 
+                                        | (QData)((IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__Vstatic__r[0U]))));
+        vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_b_wd 
+            = vlSelfRef.__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__Vfuncout;
+    }
+    if (vlSelfRef.hash_verifier__DOT__pm_b_wr_en) {
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mem_b_wd 
+            = vlSelfRef.hash_verifier__DOT__pm_b_wr_data;
+    } else {
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq 
+            = vlSelfRef.q;
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__b 
+            = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__cdo;
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__a 
+            = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mem_ntt_rd;
+        __Vtemp_19[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__a);
+        __Vtemp_19[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__a 
+                                  >> 0x00000020U));
+        __Vtemp_19[2U] = 0U;
+        __Vtemp_20[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__b);
+        __Vtemp_20[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__b 
+                                  >> 0x00000020U));
+        __Vtemp_20[2U] = 0U;
+        VL_MUL_W(3, __Vtemp_21, __Vtemp_19, __Vtemp_20);
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p[0U] 
+            = __Vtemp_21[0U];
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p[1U] 
+            = __Vtemp_21[1U];
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p[2U] 
+            = (0x0000ffffU & __Vtemp_21[2U]);
+        __Vtemp_22[0U] = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p[0U];
+        __Vtemp_22[1U] = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p[1U];
+        __Vtemp_22[2U] = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p[2U];
+        __Vtemp_22[3U] = 0U;
+        __Vtemp_22[4U] = 0U;
+        __Vtemp_23[0U] = vlSelfRef.barrett_m[0U];
+        __Vtemp_23[1U] = vlSelfRef.barrett_m[1U];
+        __Vtemp_23[2U] = vlSelfRef.barrett_m[2U];
+        __Vtemp_23[3U] = 0U;
+        __Vtemp_23[4U] = 0U;
+        VL_MUL_W(5, vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__pm, __Vtemp_22, __Vtemp_23);
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__t 
+            = (0x000001ffffffffffULL & (((QData)((IData)(vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__pm[3U])) 
+                                         << 0x00000010U) 
+                                        | ((QData)((IData)(vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__pm[2U])) 
+                                           >> 0x00000010U)));
+        __Vtemp_25[0U] = (IData)(vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__t);
+        __Vtemp_25[1U] = (IData)((vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__t 
+                                  >> 0x00000020U));
+        __Vtemp_25[2U] = 0U;
+        __Vtemp_26[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq);
+        __Vtemp_26[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq 
+                                  >> 0x00000020U));
+        __Vtemp_26[2U] = 0U;
+        VL_MUL_W(3, __Vtemp_27, __Vtemp_25, __Vtemp_26);
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__tq[0U] 
+            = __Vtemp_27[0U];
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__tq[1U] 
+            = __Vtemp_27[1U];
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__tq[2U] 
+            = (0x0000ffffU & __Vtemp_27[2U]);
+        VL_SUB_W(3, __Vtemp_29, vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__p, vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__tq);
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[0U] 
+            = __Vtemp_29[0U];
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[1U] 
+            = __Vtemp_29[1U];
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[2U] 
+            = (0x0000ffffU & __Vtemp_29[2U]);
+        __Vtemp_30[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq);
+        __Vtemp_30[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq 
+                                  >> 0x00000020U));
+        __Vtemp_30[2U] = 0U;
+        if (VL_GTE_W(3, vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r, __Vtemp_30)) {
+            __Vtemp_33[0U] = (IData)(vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq);
+            __Vtemp_33[1U] = (IData)((vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq 
+                                      >> 0x00000020U));
+            __Vtemp_33[2U] = 0U;
+            VL_SUB_W(3, __Vtemp_34, vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r, __Vtemp_33);
+            vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[0U] 
+                = __Vtemp_34[0U];
+            vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[1U] 
+                = __Vtemp_34[1U];
+            vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[2U] 
+                = (0x0000ffffU & __Vtemp_34[2U]);
+        }
+        vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__Vfuncout 
+            = (0x000000ffffffffffULL & (((QData)((IData)(vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[1U])) 
+                                         << 0x00000020U) 
+                                        | (QData)((IData)(vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mod_mul__Vstatic__r[0U]))));
+        vlSelfRef.hash_verifier__DOT__u_pmul__DOT__mem_b_wd 
+            = vlSelfRef.__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__Vfuncout;
+    }
     vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT____Vcellinp__u_ntt__coeff_wr_en 
         = ((IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_en) 
            | ((IData)(vlSelfRef.hash_verifier__DOT__u_ch__DOT__pm_a_wr_en) 
@@ -377,176 +575,12 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
         = vlSelfRef.n_inv;
     __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__a 
         = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__cdo;
-    __Vtemp_2[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__a);
-    __Vtemp_2[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__a 
-                             >> 0x00000020U));
-    __Vtemp_2[2U] = 0U;
-    __Vtemp_3[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__b);
-    __Vtemp_3[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__b 
-                             >> 0x00000020U));
-    __Vtemp_3[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_4, __Vtemp_2, __Vtemp_3);
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U] 
-        = __Vtemp_4[0U];
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U] 
-        = __Vtemp_4[1U];
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U] 
-        = (0x0000ffffU & __Vtemp_4[2U]);
-    __Vtemp_5[0U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
-    __Vtemp_5[1U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
-    __Vtemp_5[2U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
-    __Vtemp_5[3U] = 0U;
-    __Vtemp_5[4U] = 0U;
-    __Vtemp_6[0U] = vlSelfRef.barrett_m[0U];
-    __Vtemp_6[1U] = vlSelfRef.barrett_m[1U];
-    __Vtemp_6[2U] = vlSelfRef.barrett_m[2U];
-    __Vtemp_6[3U] = 0U;
-    __Vtemp_6[4U] = 0U;
-    VL_MUL_W(5, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_5, __Vtemp_6);
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
-        = (0x000001ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[3U])) 
-                                     << 0x00000010U) 
-                                    | ((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[2U])) 
-                                       >> 0x00000010U)));
-    __Vtemp_8[0U] = (IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
-    __Vtemp_8[1U] = (IData)((hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
-                             >> 0x00000020U));
-    __Vtemp_8[2U] = 0U;
-    __Vtemp_9[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq);
-    __Vtemp_9[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq 
-                             >> 0x00000020U));
-    __Vtemp_9[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_10, __Vtemp_8, __Vtemp_9);
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[0U] 
-        = __Vtemp_10[0U];
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[1U] 
-        = __Vtemp_10[1U];
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[2U] 
-        = (0x0000ffffU & __Vtemp_10[2U]);
-    VL_SUB_W(3, __Vtemp_12, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-        = __Vtemp_12[0U];
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-        = __Vtemp_12[1U];
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-        = (0x0000ffffU & __Vtemp_12[2U]);
-    __Vtemp_13[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq);
-    __Vtemp_13[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq 
-                              >> 0x00000020U));
-    __Vtemp_13[2U] = 0U;
-    if (VL_GTE_W(3, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_13)) {
-        __Vtemp_16[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq);
-        __Vtemp_16[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq 
-                                  >> 0x00000020U));
-        __Vtemp_16[2U] = 0U;
-        VL_SUB_W(3, __Vtemp_17, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_16);
-        hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-            = __Vtemp_17[0U];
-        hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-            = __Vtemp_17[1U];
-        hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-            = (0x0000ffffU & __Vtemp_17[2U]);
-    }
-    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__Vfuncout 
-        = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
-                                     << 0x00000020U) 
-                                    | (QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U]))));
-    vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__scaled 
-        = __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__Vfuncout;
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
-        = vlSelfRef.q;
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__b 
-        = vlSelfRef.n_inv;
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__a 
-        = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__cdo;
-    __Vtemp_19[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__a);
-    __Vtemp_19[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__a 
-                              >> 0x00000020U));
-    __Vtemp_19[2U] = 0U;
-    __Vtemp_20[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__b);
-    __Vtemp_20[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__b 
-                              >> 0x00000020U));
-    __Vtemp_20[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_21, __Vtemp_19, __Vtemp_20);
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U] 
-        = __Vtemp_21[0U];
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U] 
-        = __Vtemp_21[1U];
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U] 
-        = (0x0000ffffU & __Vtemp_21[2U]);
-    __Vtemp_22[0U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
-    __Vtemp_22[1U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
-    __Vtemp_22[2U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
-    __Vtemp_22[3U] = 0U;
-    __Vtemp_22[4U] = 0U;
-    __Vtemp_23[0U] = vlSelfRef.barrett_m[0U];
-    __Vtemp_23[1U] = vlSelfRef.barrett_m[1U];
-    __Vtemp_23[2U] = vlSelfRef.barrett_m[2U];
-    __Vtemp_23[3U] = 0U;
-    __Vtemp_23[4U] = 0U;
-    VL_MUL_W(5, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_22, __Vtemp_23);
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
-        = (0x000001ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[3U])) 
-                                     << 0x00000010U) 
-                                    | ((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[2U])) 
-                                       >> 0x00000010U)));
-    __Vtemp_25[0U] = (IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
-    __Vtemp_25[1U] = (IData)((hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
-                              >> 0x00000020U));
-    __Vtemp_25[2U] = 0U;
-    __Vtemp_26[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq);
-    __Vtemp_26[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
-                              >> 0x00000020U));
-    __Vtemp_26[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_27, __Vtemp_25, __Vtemp_26);
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[0U] 
-        = __Vtemp_27[0U];
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[1U] 
-        = __Vtemp_27[1U];
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[2U] 
-        = (0x0000ffffU & __Vtemp_27[2U]);
-    VL_SUB_W(3, __Vtemp_29, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-        = __Vtemp_29[0U];
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-        = __Vtemp_29[1U];
-    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-        = (0x0000ffffU & __Vtemp_29[2U]);
-    __Vtemp_30[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq);
-    __Vtemp_30[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
-                              >> 0x00000020U));
-    __Vtemp_30[2U] = 0U;
-    if (VL_GTE_W(3, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_30)) {
-        __Vtemp_33[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq);
-        __Vtemp_33[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
-                                  >> 0x00000020U));
-        __Vtemp_33[2U] = 0U;
-        VL_SUB_W(3, __Vtemp_34, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_33);
-        hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-            = __Vtemp_34[0U];
-        hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-            = __Vtemp_34[1U];
-        hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-            = (0x0000ffffU & __Vtemp_34[2U]);
-    }
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__Vfuncout 
-        = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
-                                     << 0x00000020U) 
-                                    | (QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U]))));
-    vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__scaled 
-        = __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__Vfuncout;
-    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
-        = vlSelfRef.q;
-    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__b 
-        = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__w_r;
-    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__a 
-        = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__v_r;
-    __Vtemp_36[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__a);
-    __Vtemp_36[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__a 
+    __Vtemp_36[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__a);
+    __Vtemp_36[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__a 
                               >> 0x00000020U));
     __Vtemp_36[2U] = 0U;
-    __Vtemp_37[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__b);
-    __Vtemp_37[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__b 
+    __Vtemp_37[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__b);
+    __Vtemp_37[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__b 
                               >> 0x00000020U));
     __Vtemp_37[2U] = 0U;
     VL_MUL_W(3, __Vtemp_38, __Vtemp_36, __Vtemp_37);
@@ -576,8 +610,8 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
     __Vtemp_42[1U] = (IData)((hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
                               >> 0x00000020U));
     __Vtemp_42[2U] = 0U;
-    __Vtemp_43[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq);
-    __Vtemp_43[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+    __Vtemp_43[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq);
+    __Vtemp_43[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq 
                               >> 0x00000020U));
     __Vtemp_43[2U] = 0U;
     VL_MUL_W(3, __Vtemp_44, __Vtemp_42, __Vtemp_43);
@@ -594,13 +628,13 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
         = __Vtemp_46[1U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
         = (0x0000ffffU & __Vtemp_46[2U]);
-    __Vtemp_47[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq);
-    __Vtemp_47[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+    __Vtemp_47[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq);
+    __Vtemp_47[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq 
                               >> 0x00000020U));
     __Vtemp_47[2U] = 0U;
     if (VL_GTE_W(3, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_47)) {
-        __Vtemp_50[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq);
-        __Vtemp_50[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+        __Vtemp_50[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq);
+        __Vtemp_50[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__qq 
                                   >> 0x00000020U));
         __Vtemp_50[2U] = 0U;
         VL_SUB_W(3, __Vtemp_51, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_50);
@@ -611,24 +645,24 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
         hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
             = (0x0000ffffU & __Vtemp_51[2U]);
     }
-    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__Vfuncout 
+    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__Vfuncout 
         = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
                                      << 0x00000020U) 
                                     | (QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U]))));
-    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__vw 
-        = __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__Vfuncout;
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+    vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__scaled 
+        = __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__21__Vfuncout;
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
         = vlSelfRef.q;
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__b 
-        = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__w_r;
-    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__a 
-        = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__v_r;
-    __Vtemp_53[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__a);
-    __Vtemp_53[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__a 
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__b 
+        = vlSelfRef.n_inv;
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__a 
+        = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__cdo;
+    __Vtemp_53[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__a);
+    __Vtemp_53[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__a 
                               >> 0x00000020U));
     __Vtemp_53[2U] = 0U;
-    __Vtemp_54[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__b);
-    __Vtemp_54[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__b 
+    __Vtemp_54[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__b);
+    __Vtemp_54[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__b 
                               >> 0x00000020U));
     __Vtemp_54[2U] = 0U;
     VL_MUL_W(3, __Vtemp_55, __Vtemp_53, __Vtemp_54);
@@ -658,8 +692,8 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
     __Vtemp_59[1U] = (IData)((hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
                               >> 0x00000020U));
     __Vtemp_59[2U] = 0U;
-    __Vtemp_60[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq);
-    __Vtemp_60[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+    __Vtemp_60[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq);
+    __Vtemp_60[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
                               >> 0x00000020U));
     __Vtemp_60[2U] = 0U;
     VL_MUL_W(3, __Vtemp_61, __Vtemp_59, __Vtemp_60);
@@ -676,13 +710,13 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
         = __Vtemp_63[1U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
         = (0x0000ffffU & __Vtemp_63[2U]);
-    __Vtemp_64[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq);
-    __Vtemp_64[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+    __Vtemp_64[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq);
+    __Vtemp_64[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
                               >> 0x00000020U));
     __Vtemp_64[2U] = 0U;
     if (VL_GTE_W(3, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_64)) {
-        __Vtemp_67[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq);
-        __Vtemp_67[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+        __Vtemp_67[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq);
+        __Vtemp_67[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__qq 
                                   >> 0x00000020U));
         __Vtemp_67[2U] = 0U;
         VL_SUB_W(3, __Vtemp_68, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_67);
@@ -692,6 +726,170 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
             = __Vtemp_68[1U];
         hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
             = (0x0000ffffU & __Vtemp_68[2U]);
+    }
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__Vfuncout 
+        = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
+                                     << 0x00000020U) 
+                                    | (QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U]))));
+    vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__scaled 
+        = __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__31__Vfuncout;
+    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+        = vlSelfRef.q;
+    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__b 
+        = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__w_r;
+    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__a 
+        = vlSelfRef.hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__v_r;
+    __Vtemp_70[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__a);
+    __Vtemp_70[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__a 
+                              >> 0x00000020U));
+    __Vtemp_70[2U] = 0U;
+    __Vtemp_71[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__b);
+    __Vtemp_71[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__b 
+                              >> 0x00000020U));
+    __Vtemp_71[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_72, __Vtemp_70, __Vtemp_71);
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U] 
+        = __Vtemp_72[0U];
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U] 
+        = __Vtemp_72[1U];
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U] 
+        = (0x0000ffffU & __Vtemp_72[2U]);
+    __Vtemp_73[0U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
+    __Vtemp_73[1U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
+    __Vtemp_73[2U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
+    __Vtemp_73[3U] = 0U;
+    __Vtemp_73[4U] = 0U;
+    __Vtemp_74[0U] = vlSelfRef.barrett_m[0U];
+    __Vtemp_74[1U] = vlSelfRef.barrett_m[1U];
+    __Vtemp_74[2U] = vlSelfRef.barrett_m[2U];
+    __Vtemp_74[3U] = 0U;
+    __Vtemp_74[4U] = 0U;
+    VL_MUL_W(5, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_73, __Vtemp_74);
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
+        = (0x000001ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[3U])) 
+                                     << 0x00000010U) 
+                                    | ((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[2U])) 
+                                       >> 0x00000010U)));
+    __Vtemp_76[0U] = (IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
+    __Vtemp_76[1U] = (IData)((hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
+                              >> 0x00000020U));
+    __Vtemp_76[2U] = 0U;
+    __Vtemp_77[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq);
+    __Vtemp_77[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+                              >> 0x00000020U));
+    __Vtemp_77[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_78, __Vtemp_76, __Vtemp_77);
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[0U] 
+        = __Vtemp_78[0U];
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[1U] 
+        = __Vtemp_78[1U];
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[2U] 
+        = (0x0000ffffU & __Vtemp_78[2U]);
+    VL_SUB_W(3, __Vtemp_80, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
+        = __Vtemp_80[0U];
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
+        = __Vtemp_80[1U];
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
+        = (0x0000ffffU & __Vtemp_80[2U]);
+    __Vtemp_81[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq);
+    __Vtemp_81[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+                              >> 0x00000020U));
+    __Vtemp_81[2U] = 0U;
+    if (VL_GTE_W(3, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_81)) {
+        __Vtemp_84[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq);
+        __Vtemp_84[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__qq 
+                                  >> 0x00000020U));
+        __Vtemp_84[2U] = 0U;
+        VL_SUB_W(3, __Vtemp_85, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_84);
+        hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
+            = __Vtemp_85[0U];
+        hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
+            = __Vtemp_85[1U];
+        hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
+            = (0x0000ffffU & __Vtemp_85[2U]);
+    }
+    __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__Vfuncout 
+        = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
+                                     << 0x00000020U) 
+                                    | (QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U]))));
+    hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__vw 
+        = __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__15__Vfuncout;
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+        = vlSelfRef.q;
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__b 
+        = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__w_r;
+    __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__a 
+        = vlSelfRef.hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__v_r;
+    __Vtemp_87[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__a);
+    __Vtemp_87[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__a 
+                              >> 0x00000020U));
+    __Vtemp_87[2U] = 0U;
+    __Vtemp_88[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__b);
+    __Vtemp_88[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__b 
+                              >> 0x00000020U));
+    __Vtemp_88[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_89, __Vtemp_87, __Vtemp_88);
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U] 
+        = __Vtemp_89[0U];
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U] 
+        = __Vtemp_89[1U];
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U] 
+        = (0x0000ffffU & __Vtemp_89[2U]);
+    __Vtemp_90[0U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
+    __Vtemp_90[1U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
+    __Vtemp_90[2U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
+    __Vtemp_90[3U] = 0U;
+    __Vtemp_90[4U] = 0U;
+    __Vtemp_91[0U] = vlSelfRef.barrett_m[0U];
+    __Vtemp_91[1U] = vlSelfRef.barrett_m[1U];
+    __Vtemp_91[2U] = vlSelfRef.barrett_m[2U];
+    __Vtemp_91[3U] = 0U;
+    __Vtemp_91[4U] = 0U;
+    VL_MUL_W(5, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_90, __Vtemp_91);
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
+        = (0x000001ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[3U])) 
+                                     << 0x00000010U) 
+                                    | ((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[2U])) 
+                                       >> 0x00000010U)));
+    __Vtemp_93[0U] = (IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
+    __Vtemp_93[1U] = (IData)((hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
+                              >> 0x00000020U));
+    __Vtemp_93[2U] = 0U;
+    __Vtemp_94[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq);
+    __Vtemp_94[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+                              >> 0x00000020U));
+    __Vtemp_94[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_95, __Vtemp_93, __Vtemp_94);
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[0U] 
+        = __Vtemp_95[0U];
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[1U] 
+        = __Vtemp_95[1U];
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[2U] 
+        = (0x0000ffffU & __Vtemp_95[2U]);
+    VL_SUB_W(3, __Vtemp_97, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
+        = __Vtemp_97[0U];
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
+        = __Vtemp_97[1U];
+    hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
+        = (0x0000ffffU & __Vtemp_97[2U]);
+    __Vtemp_98[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq);
+    __Vtemp_98[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+                              >> 0x00000020U));
+    __Vtemp_98[2U] = 0U;
+    if (VL_GTE_W(3, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_98)) {
+        __Vtemp_101[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq);
+        __Vtemp_101[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__qq 
+                                   >> 0x00000020U));
+        __Vtemp_101[2U] = 0U;
+        VL_SUB_W(3, __Vtemp_102, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_101);
+        hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
+            = __Vtemp_102[0U];
+        hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
+            = __Vtemp_102[1U];
+        hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
+            = (0x0000ffffU & __Vtemp_102[2U]);
     }
     __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__25__Vfuncout 
         = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
@@ -779,75 +977,75 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
                                      ? (__VdfgRegularize_hebeb780c_0_4 
                                         - vlSelfRef.q)
                                      : __VdfgRegularize_hebeb780c_0_4));
-    __Vtemp_70[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__a);
-    __Vtemp_70[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__a 
-                              >> 0x00000020U));
-    __Vtemp_70[2U] = 0U;
-    __Vtemp_71[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__b);
-    __Vtemp_71[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__b 
-                              >> 0x00000020U));
-    __Vtemp_71[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_72, __Vtemp_70, __Vtemp_71);
+    __Vtemp_104[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__a);
+    __Vtemp_104[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__a 
+                               >> 0x00000020U));
+    __Vtemp_104[2U] = 0U;
+    __Vtemp_105[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__b);
+    __Vtemp_105[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__b 
+                               >> 0x00000020U));
+    __Vtemp_105[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_106, __Vtemp_104, __Vtemp_105);
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U] 
-        = __Vtemp_72[0U];
+        = __Vtemp_106[0U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U] 
-        = __Vtemp_72[1U];
+        = __Vtemp_106[1U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U] 
-        = (0x0000ffffU & __Vtemp_72[2U]);
-    __Vtemp_73[0U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
-    __Vtemp_73[1U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
-    __Vtemp_73[2U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
-    __Vtemp_73[3U] = 0U;
-    __Vtemp_73[4U] = 0U;
-    __Vtemp_74[0U] = vlSelfRef.barrett_m[0U];
-    __Vtemp_74[1U] = vlSelfRef.barrett_m[1U];
-    __Vtemp_74[2U] = vlSelfRef.barrett_m[2U];
-    __Vtemp_74[3U] = 0U;
-    __Vtemp_74[4U] = 0U;
-    VL_MUL_W(5, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_73, __Vtemp_74);
+        = (0x0000ffffU & __Vtemp_106[2U]);
+    __Vtemp_107[0U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
+    __Vtemp_107[1U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
+    __Vtemp_107[2U] = hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
+    __Vtemp_107[3U] = 0U;
+    __Vtemp_107[4U] = 0U;
+    __Vtemp_108[0U] = vlSelfRef.barrett_m[0U];
+    __Vtemp_108[1U] = vlSelfRef.barrett_m[1U];
+    __Vtemp_108[2U] = vlSelfRef.barrett_m[2U];
+    __Vtemp_108[3U] = 0U;
+    __Vtemp_108[4U] = 0U;
+    VL_MUL_W(5, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_107, __Vtemp_108);
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
         = (0x000001ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[3U])) 
                                      << 0x00000010U) 
                                     | ((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[2U])) 
                                        >> 0x00000010U)));
-    __Vtemp_76[0U] = (IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
-    __Vtemp_76[1U] = (IData)((hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
-                              >> 0x00000020U));
-    __Vtemp_76[2U] = 0U;
-    __Vtemp_77[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq);
-    __Vtemp_77[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq 
-                              >> 0x00000020U));
-    __Vtemp_77[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_78, __Vtemp_76, __Vtemp_77);
+    __Vtemp_110[0U] = (IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
+    __Vtemp_110[1U] = (IData)((hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
+                               >> 0x00000020U));
+    __Vtemp_110[2U] = 0U;
+    __Vtemp_111[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq);
+    __Vtemp_111[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq 
+                               >> 0x00000020U));
+    __Vtemp_111[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_112, __Vtemp_110, __Vtemp_111);
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[0U] 
-        = __Vtemp_78[0U];
+        = __Vtemp_112[0U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[1U] 
-        = __Vtemp_78[1U];
+        = __Vtemp_112[1U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[2U] 
-        = (0x0000ffffU & __Vtemp_78[2U]);
-    VL_SUB_W(3, __Vtemp_80, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
+        = (0x0000ffffU & __Vtemp_112[2U]);
+    VL_SUB_W(3, __Vtemp_114, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-        = __Vtemp_80[0U];
+        = __Vtemp_114[0U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-        = __Vtemp_80[1U];
+        = __Vtemp_114[1U];
     hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-        = (0x0000ffffU & __Vtemp_80[2U]);
-    __Vtemp_81[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq);
-    __Vtemp_81[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq 
-                              >> 0x00000020U));
-    __Vtemp_81[2U] = 0U;
-    if (VL_GTE_W(3, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_81)) {
-        __Vtemp_84[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq);
-        __Vtemp_84[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq 
-                                  >> 0x00000020U));
-        __Vtemp_84[2U] = 0U;
-        VL_SUB_W(3, __Vtemp_85, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_84);
+        = (0x0000ffffU & __Vtemp_114[2U]);
+    __Vtemp_115[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq);
+    __Vtemp_115[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq 
+                               >> 0x00000020U));
+    __Vtemp_115[2U] = 0U;
+    if (VL_GTE_W(3, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_115)) {
+        __Vtemp_118[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq);
+        __Vtemp_118[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__qq 
+                                   >> 0x00000020U));
+        __Vtemp_118[2U] = 0U;
+        VL_SUB_W(3, __Vtemp_119, hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_118);
         hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-            = __Vtemp_85[0U];
+            = __Vtemp_119[0U];
         hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-            = __Vtemp_85[1U];
+            = __Vtemp_119[1U];
         hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-            = (0x0000ffffU & __Vtemp_85[2U]);
+            = (0x0000ffffU & __Vtemp_119[2U]);
     }
     __Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__20__Vfuncout 
         = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
@@ -865,75 +1063,75 @@ VL_ATTR_COLD void Vhash_verifier___024root___stl_sequent__TOP__0(Vhash_verifier_
                                      ? (__VdfgRegularize_hebeb780c_0_9 
                                         - vlSelfRef.q)
                                      : __VdfgRegularize_hebeb780c_0_9));
-    __Vtemp_87[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__a);
-    __Vtemp_87[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__a 
-                              >> 0x00000020U));
-    __Vtemp_87[2U] = 0U;
-    __Vtemp_88[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__b);
-    __Vtemp_88[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__b 
-                              >> 0x00000020U));
-    __Vtemp_88[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_89, __Vtemp_87, __Vtemp_88);
+    __Vtemp_121[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__a);
+    __Vtemp_121[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__a 
+                               >> 0x00000020U));
+    __Vtemp_121[2U] = 0U;
+    __Vtemp_122[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__b);
+    __Vtemp_122[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__b 
+                               >> 0x00000020U));
+    __Vtemp_122[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_123, __Vtemp_121, __Vtemp_122);
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U] 
-        = __Vtemp_89[0U];
+        = __Vtemp_123[0U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U] 
-        = __Vtemp_89[1U];
+        = __Vtemp_123[1U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U] 
-        = (0x0000ffffU & __Vtemp_89[2U]);
-    __Vtemp_90[0U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
-    __Vtemp_90[1U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
-    __Vtemp_90[2U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
-    __Vtemp_90[3U] = 0U;
-    __Vtemp_90[4U] = 0U;
-    __Vtemp_91[0U] = vlSelfRef.barrett_m[0U];
-    __Vtemp_91[1U] = vlSelfRef.barrett_m[1U];
-    __Vtemp_91[2U] = vlSelfRef.barrett_m[2U];
-    __Vtemp_91[3U] = 0U;
-    __Vtemp_91[4U] = 0U;
-    VL_MUL_W(5, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_90, __Vtemp_91);
+        = (0x0000ffffU & __Vtemp_123[2U]);
+    __Vtemp_124[0U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[0U];
+    __Vtemp_124[1U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[1U];
+    __Vtemp_124[2U] = hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p[2U];
+    __Vtemp_124[3U] = 0U;
+    __Vtemp_124[4U] = 0U;
+    __Vtemp_125[0U] = vlSelfRef.barrett_m[0U];
+    __Vtemp_125[1U] = vlSelfRef.barrett_m[1U];
+    __Vtemp_125[2U] = vlSelfRef.barrett_m[2U];
+    __Vtemp_125[3U] = 0U;
+    __Vtemp_125[4U] = 0U;
+    VL_MUL_W(5, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm, __Vtemp_124, __Vtemp_125);
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
         = (0x000001ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[3U])) 
                                      << 0x00000010U) 
                                     | ((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__pm[2U])) 
                                        >> 0x00000010U)));
-    __Vtemp_93[0U] = (IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
-    __Vtemp_93[1U] = (IData)((hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
-                              >> 0x00000020U));
-    __Vtemp_93[2U] = 0U;
-    __Vtemp_94[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq);
-    __Vtemp_94[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq 
-                              >> 0x00000020U));
-    __Vtemp_94[2U] = 0U;
-    VL_MUL_W(3, __Vtemp_95, __Vtemp_93, __Vtemp_94);
+    __Vtemp_127[0U] = (IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t);
+    __Vtemp_127[1U] = (IData)((hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__t 
+                               >> 0x00000020U));
+    __Vtemp_127[2U] = 0U;
+    __Vtemp_128[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq);
+    __Vtemp_128[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq 
+                               >> 0x00000020U));
+    __Vtemp_128[2U] = 0U;
+    VL_MUL_W(3, __Vtemp_129, __Vtemp_127, __Vtemp_128);
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[0U] 
-        = __Vtemp_95[0U];
+        = __Vtemp_129[0U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[1U] 
-        = __Vtemp_95[1U];
+        = __Vtemp_129[1U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq[2U] 
-        = (0x0000ffffU & __Vtemp_95[2U]);
-    VL_SUB_W(3, __Vtemp_97, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
+        = (0x0000ffffU & __Vtemp_129[2U]);
+    VL_SUB_W(3, __Vtemp_131, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__p, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__tq);
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-        = __Vtemp_97[0U];
+        = __Vtemp_131[0U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-        = __Vtemp_97[1U];
+        = __Vtemp_131[1U];
     hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-        = (0x0000ffffU & __Vtemp_97[2U]);
-    __Vtemp_98[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq);
-    __Vtemp_98[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq 
-                              >> 0x00000020U));
-    __Vtemp_98[2U] = 0U;
-    if (VL_GTE_W(3, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_98)) {
-        __Vtemp_101[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq);
-        __Vtemp_101[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq 
+        = (0x0000ffffU & __Vtemp_131[2U]);
+    __Vtemp_132[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq);
+    __Vtemp_132[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq 
+                               >> 0x00000020U));
+    __Vtemp_132[2U] = 0U;
+    if (VL_GTE_W(3, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_132)) {
+        __Vtemp_135[0U] = (IData)(__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq);
+        __Vtemp_135[1U] = (IData)((__Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__qq 
                                    >> 0x00000020U));
-        __Vtemp_101[2U] = 0U;
-        VL_SUB_W(3, __Vtemp_102, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_101);
+        __Vtemp_135[2U] = 0U;
+        VL_SUB_W(3, __Vtemp_136, hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r, __Vtemp_135);
         hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[0U] 
-            = __Vtemp_102[0U];
+            = __Vtemp_136[0U];
         hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U] 
-            = __Vtemp_102[1U];
+            = __Vtemp_136[1U];
         hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[2U] 
-            = (0x0000ffffU & __Vtemp_102[2U]);
+            = (0x0000ffffU & __Vtemp_136[2U]);
     }
     __Vfunc_hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__30__Vfuncout 
         = (0x000000ffffffffffULL & (((QData)((IData)(hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__mod_mul__Vstatic__r[1U])) 
@@ -1311,6 +1509,7 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
         vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt[__Vi0] = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 2646961255638154577ull);
     }
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt_rd = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 133850178361420287ull);
+    vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_b_wd = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 7573697071124247336ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__state = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3899348665926092083ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__idx = VL_SCOPED_RAND_RESET_I(14, __VscopeHash, 10697548622189233628ull);
     vlSelf->hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_coeff_wr_en = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 7554290092520382926ull);
@@ -1372,6 +1571,7 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
         vlSelf->hash_verifier__DOT__u_pmul__DOT__mem_ntt[__Vi0] = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 10473293836095787998ull);
     }
     vlSelf->hash_verifier__DOT__u_pmul__DOT__mem_ntt_rd = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 3709173886898145476ull);
+    vlSelf->hash_verifier__DOT__u_pmul__DOT__mem_b_wd = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 2255254845378982118ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__state = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3015890349949140473ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__idx = VL_SCOPED_RAND_RESET_I(14, __VscopeHash, 2680130297339594348ull);
     vlSelf->hash_verifier__DOT__u_pmul__DOT__ntt_coeff_wr_en = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 14107438484345328093ull);
@@ -1426,79 +1626,42 @@ VL_ATTR_COLD void Vhash_verifier___024root___ctor_var_reset(Vhash_verifier___024
     vlSelf->hash_verifier__DOT__u_padd__DOT__b_rd = VL_SCOPED_RAND_RESET_Q(40, __VscopeHash, 1399549877238456114ull);
     vlSelf->hash_verifier__DOT__u_padd__DOT__sub_r = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 12584529276687946119ull);
     vlSelf->hash_verifier__DOT__u_padd__DOT__radr = VL_SCOPED_RAND_RESET_I(13, __VscopeHash, 4649262826007376852ull);
+    vlSelf->__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__Vfuncout = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__a = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__b = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mod_mul__14__qq = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__Vfuncout = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__a = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__b = 0;
+    vlSelf->__Vfunc_hash_verifier__DOT__u_pmul__DOT__mod_mul__24__qq = 0;
     vlSelf->__VdfgRegularize_hebeb780c_0_2 = 0;
     vlSelf->__VdfgRegularize_hebeb780c_0_3 = 0;
     vlSelf->__VdfgRegularize_hebeb780c_0_7 = 0;
     vlSelf->__VdfgRegularize_hebeb780c_0_8 = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__pa_start = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__state = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__pa_rd_addr = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__idx = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__ch_rd_addr = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__comp_i = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__pa_start = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__ch_done = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__state = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__horner_i = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__idx = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__pa_rd_addr = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__pm_done = 0;
+    vlSelf->__Vdly__hash_verifier__DOT__pm_start = 0;
+    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__pm_start = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__state = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__idx = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__int_rd_addr = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_padd__DOT__state = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__pm_done = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_pmul__DOT__state = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_pmul__DOT__idx = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_pmul__DOT__int_rd_addr = 0;
-    vlSelf->__Vdly__hash_verifier__DOT__u_padd__DOT__state = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__ntt_done = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__stage = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__inv_r = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_pmul__DOT__ntt_done = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__stage = 0;
     vlSelf->__Vdly__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__inv_r = 0;
-    vlSelf->__VdlyVal__hash_verifier__DOT__ct_mem__v0 = 0;
-    vlSelf->__VdlyDim0__hash_verifier__DOT__ct_mem__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__ct_mem__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__h3__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__h2__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__h1__v0 = 0;
-    vlSelf->__VdlyVal__hash_verifier__DOT__u_ch__DOT__ct__v0 = 0;
-    vlSelf->__VdlyDim0__hash_verifier__DOT__u_ch__DOT__ct__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__ct__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__mem_r__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__mem_r__v1 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__mem_h__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__mem_h__v1 = 0;
-    vlSelf->__VdlyVal__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt__v0 = 0;
-    vlSelf->__VdlyDim0__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_ntt__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_b__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__mem_b__v1 = 0;
     vlSelf->__VdlyVal__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__coeff__v0 = 0;
     vlSelf->__VdlyDim0__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__coeff__v0 = 0;
     vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__coeff__v0 = 0;
     vlSelf->__VdlyVal__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__tw__v0 = 0;
     vlSelf->__VdlyDim0__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__tw__v0 = 0;
     vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__u_pmul__DOT__u_ntt__DOT__tw__v0 = 0;
-    vlSelf->__VdlyVal__hash_verifier__DOT__u_ch__DOT__u_padd__DOT__mem_r__v0 = 0;
-    vlSelf->__VdlyDim0__hash_verifier__DOT__u_ch__DOT__u_padd__DOT__mem_r__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_ch__DOT__u_padd__DOT__mem_r__v0 = 0;
-    vlSelf->__VdlyVal__hash_verifier__DOT__u_pmul__DOT__mem_ntt__v0 = 0;
-    vlSelf->__VdlyDim0__hash_verifier__DOT__u_pmul__DOT__mem_ntt__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_pmul__DOT__mem_ntt__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_pmul__DOT__mem_b__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_pmul__DOT__mem_b__v1 = 0;
     vlSelf->__VdlyVal__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__coeff__v0 = 0;
     vlSelf->__VdlyDim0__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__coeff__v0 = 0;
     vlSelf->__VdlySet__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__coeff__v0 = 0;
     vlSelf->__VdlyVal__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__tw__v0 = 0;
     vlSelf->__VdlyDim0__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__tw__v0 = 0;
     vlSelf->__VdlySet__hash_verifier__DOT__u_pmul__DOT__u_ntt__DOT__tw__v0 = 0;
-    vlSelf->__VdlyVal__hash_verifier__DOT__u_padd__DOT__mem_r__v0 = 0;
-    vlSelf->__VdlyDim0__hash_verifier__DOT__u_padd__DOT__mem_r__v0 = 0;
-    vlSelf->__VdlySet__hash_verifier__DOT__u_padd__DOT__mem_r__v0 = 0;
     for (int __Vi0 = 0; __Vi0 < 1; ++__Vi0) {
         vlSelf->__VstlTriggered[__Vi0] = 0;
     }
