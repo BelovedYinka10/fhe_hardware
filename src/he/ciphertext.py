@@ -1,5 +1,9 @@
+from __future__ import annotations
 import copy
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from he.galois_ring.poly import Poly
 from he.galois_ring.rns_poly import RNS_Poly
 from he.he_parameter import HE_Parameter

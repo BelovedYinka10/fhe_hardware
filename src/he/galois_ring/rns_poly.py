@@ -1,4 +1,8 @@
-from typing import Self
+from __future__ import annotations
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from he.galois_ring.poly import Poly
 from _util import _modulus
 from he._ntt import _NTT_Engine

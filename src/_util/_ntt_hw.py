@@ -68,7 +68,7 @@ class HW_NTT_Engine:
     """
 
     # Shared library loaded once per process
-    _lib: ctypes.CDLL | None = None
+    _lib: "ctypes.CDLL | None" = None
 
     @classmethod
     def _get_lib(cls) -> ctypes.CDLL:

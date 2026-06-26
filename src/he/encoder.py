@@ -1,3 +1,4 @@
+from __future__ import annotations
 from he.galois_ring.poly import Poly
 from he.he_parameter import HE_Parameter
 

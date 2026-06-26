@@ -1,4 +1,7 @@
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from _util import _random
 from he.galois_ring.poly import Poly
 from he.galois_ring.rns_poly import RNS_Poly

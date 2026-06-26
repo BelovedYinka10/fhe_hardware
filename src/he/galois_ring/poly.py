@@ -1,7 +1,11 @@
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from _util import _modulus
 from he._ntt import _NTT_Engine
 from _util._prime import *
+from he.galois_ring.poly_config import PolyConfig
 
 # element of galois field Z_q[X]/f(X), negacyclic ring
 # q: prime, f(X) = X^N + 1
@@ -71,22 +75,50 @@ class Poly:
             raise Exception(f"except Z_{self._poly_modulus} but Z_{other._poly_modulus}")
         if self.is_ntt_form() != other.is_ntt_form():
             raise Exception(f"polynomial form is not match")
-        if self.is_ntt_form():
-            res = [ _modulus._centered_modulus(a * b, self._coeff_modulus) for a, b in zip(self._data, other._data) ]
+
+        if PolyConfig.use_ntt() and self.is_ntt_form():
+            # NTT form: pointwise multiply — O(N)
+            res = [ _modulus._centered_modulus(a * b, self._coeff_modulus)
+                    for a, b in zip(self._data, other._data) ]
             return Poly(self._coeff_modulus, self._poly_modulus, res, self._is_ntt_form)\
                 ._set_ntt_engine(self._ntt_engine)\
                 ._compress()
-        else:
-            res = [0 for _ in range(len(self._data) + len(other._data))]
-            for i in range(len(self._data)):
-                for j in range(len(other._data)):
-                    res[i + j] = _modulus._centered_modulus(self._data[i] * other._data[j], self._coeff_modulus)
-            if len(res) >= self._poly_modulus:
-                for deg in range(len(res) - 1, self._poly_modulus - 1, -1):
-                    res[deg - self._poly_modulus] = _modulus._centered_modulus(res[deg - self._poly_modulus] - res[deg], self._coeff_modulus)
-            return Poly(self._coeff_modulus, self._poly_modulus, res, self._is_ntt_form)\
+
+        if PolyConfig.use_ntt() and not self.is_ntt_form() and self._ntt_engine is not None:
+            # Coefficient form + NTT mode: pad → NTT → pointwise → INTT — O(N log N)
+            a = self.copy()
+            b = other.copy()
+            # pad to full degree before NTT
+            if len(a._data) < a._poly_modulus:
+                a._data += [0] * (a._poly_modulus - len(a._data))
+            if len(b._data) < b._poly_modulus:
+                b._data += [0] * (b._poly_modulus - len(b._data))
+            a.transform_to_ntt_form()
+            b.transform_to_ntt_form()
+            res = [_modulus._centered_modulus(x * y, self._coeff_modulus)
+                   for x, y in zip(a._data, b._data)]
+            return Poly(self._coeff_modulus, self._poly_modulus, res, True)\
                 ._set_ntt_engine(self._ntt_engine)\
-                ._compress()\
+                .transform_from_ntt_form()\
+                ._compress()
+
+        # Schoolbook negacyclic multiplication — O(N^2)
+        # Pad both to full degree N so negacyclic reduction is always applied.
+        N = self._poly_modulus
+        a = self._data + [0] * (N - len(self._data))
+        b = other._data + [0] * (N - len(other._data))
+        res = [0] * (2 * N)
+        for i in range(N):
+            for j in range(N):
+                res[i + j] = _modulus._centered_modulus(
+                    res[i + j] + a[i] * b[j], self._coeff_modulus)
+        # Negacyclic reduction: X^N ≡ -1, so coeff[k] -= coeff[k+N]
+        for deg in range(2 * N - 1, N - 1, -1):
+            res[deg - N] = _modulus._centered_modulus(
+                res[deg - N] - res[deg], self._coeff_modulus)
+        return Poly(self._coeff_modulus, self._poly_modulus, res[:N], self._is_ntt_form)\
+            ._set_ntt_engine(self._ntt_engine)\
+            ._compress()
     
     def _compress(self):
         if self.is_ntt_form():
@@ -193,18 +225,17 @@ class Poly:
             raise Exception(f"except Z_{self._poly_modulus} but Z_{other._poly_modulus}")
         if self.is_ntt_form() != other.is_ntt_form():
             raise Exception(f"polynomial form is not match {self.is_ntt_form()} {other.is_ntt_form()}")
-        if self.is_ntt_form():
+
+        if PolyConfig.use_ntt() and self.is_ntt_form():
             for i in range(self._poly_modulus):
-                self._data[i] = _modulus._centered_modulus(self._data[i] * other._data[i], self._coeff_modulus)
-        else:
-            res = [0 for _ in range(len(self._data) + len(other._data))]
-            for i in range(len(self._data)):
-                for j in range(len(other._data)):
-                    res[i + j] = _modulus._centered_modulus(self._data[i] * other._data[j], self._coeff_modulus)
-            if len(res) >= self._poly_modulus:
-                for deg in range(len(res) - 1, self._poly_modulus - 1, -1):
-                    res[deg - self._poly_modulus] = _modulus._centered_modulus(res[deg - self._poly_modulus] - res[deg], self._coeff_modulus)
-            self._data = res
+                self._data[i] = _modulus._centered_modulus(
+                    self._data[i] * other._data[i], self._coeff_modulus)
+            return self
+
+        # For all remaining cases (NTT coeff-form or schoolbook), delegate to __mul__
+        result = self.__mul__(other)
+        self._data = result._data
+        self._is_ntt_form = result._is_ntt_form
         return self
     
     def mul_scalar_inplace(self, scalar : int):
@@ -234,8 +265,12 @@ class Poly:
             raise Exception(f"polynomial form is not match {self.is_ntt_form()} {other.is_ntt_form()}")
         if self._coeff_modulus != other._coeff_modulus or self._poly_modulus != other._poly_modulus:
             return False
-        for i in range(len(self._data)):
-            if self._data[i] != other._data[i]:
+        a = self._compress()._data
+        b = other._compress()._data
+        if len(a) != len(b):
+            return False
+        for i in range(len(a)):
+            if a[i] != b[i]:
                 return False
         return True
     

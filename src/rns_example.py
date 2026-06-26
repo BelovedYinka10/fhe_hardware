@@ -11,6 +11,7 @@ true coefficients.
   Ring: Z_Q[X] / (X^4 + 1)
 """
 
+from __future__ import annotations
 from he.galois_ring.poly import Poly
 from he.galois_ring.rns_poly import RNS_Poly
 from he.galois_ring._util._modulus import _mod_inverse, _centered_modulus

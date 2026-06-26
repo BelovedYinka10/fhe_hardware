@@ -1,3 +1,4 @@
+from __future__ import annotations
 from _util import _prime as prime
 from _util import _modulus
 from he._ntt import _NTT_Engine

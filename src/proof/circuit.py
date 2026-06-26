@@ -1,8 +1,12 @@
+from __future__ import annotations
 import copy
 import heapq
 import itertools
 from enum import Enum
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from he.galois_ring.rns_poly import RNS_Poly
 from he.ciphertext import Ciphertext
 from _util import _modulus

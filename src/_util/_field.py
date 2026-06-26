@@ -1,3 +1,4 @@
+from __future__ import annotations
 from _util import _modulus
 from _util import _random
 

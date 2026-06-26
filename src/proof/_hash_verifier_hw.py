@@ -13,6 +13,7 @@ import ctypes
 import pathlib
 import sys as _sys
 
+from __future__ import annotations
 from he.he_parameter import HE_Parameter
 from he.ciphertext import Ciphertext
 from he.galois_ring.rns_poly import RNS_Poly
@@ -81,7 +82,7 @@ class HW_HashVerifier:
     One simulation engine per RNS prime.
     """
 
-    _lib: ctypes.CDLL | None = None
+    _lib: "ctypes.CDLL | None" = None
 
     @classmethod
     def _get_lib(cls) -> ctypes.CDLL:
