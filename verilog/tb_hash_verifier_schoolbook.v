@@ -261,8 +261,10 @@ module tb_hash_verifier_schoolbook;
     end
 
     // ── Timeout watchdog ────────────────────────────────────────
+    // Use 64-bit literal to avoid 32-bit integer overflow
+    // 2B cycles * 10ns * 2 = 40,000,000,000 ns
     initial begin
-        #(MAX_CYCLES * 10 * 2);  // 10ns per cycle * 2 for safety
+        #40_000_000_000;
         $display("  FATAL: Simulation timeout!");
         $finish;
     end
