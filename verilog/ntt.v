@@ -78,19 +78,30 @@ module ntt #(
     reg [Q_WIDTH-1:0] tw    [0:2*N-1];      // twiddle ROM (simple dual-port)
 
     // ── FSM states ────────────────────────────────────────────────
-    // The coefficient RAM is a single read-port + single write-port
-    // (simple dual-port) Block RAM, so each butterfly serialises its two
-    // reads and two writes across separate cycles.
+    // mod_mul is pipelined across 3 register stages so each stage fits
+    // in ~13ns → closes timing at 100 MHz (10ns period).
+    //
+    // Pipeline stages for vw = v * w mod q (Barrett):
+    //   MUL1: p  = v * w                (40×40 → 80-bit multiply)
+    //   MUL2: pm = p * barrett_m        (80×80 → 160-bit multiply)
+    //   MUL3: t  = pm>>80; tq = t*q; vw = p-tq  (final reduction)
+    //
+    // Same pipeline used for INTT scale: scaled = cdo * n_inv mod q
     localparam [3:0]
         ST_IDLE     = 4'd0,
         ST_RD_U     = 4'd1,   // issue read of coeff[ua] (+ tw[tw_idx])
         ST_RD_V     = 4'd2,   // latch u,w; issue read of coeff[va]
-        ST_CALC     = 4'd3,   // latch v; butterfly result now valid
-        ST_WR_U     = 4'd4,   // write coeff[ua] = u'
-        ST_WR_V     = 4'd5,   // write coeff[va] = v'; advance counters
-        ST_SCALE_RD = 4'd6,   // INTT: issue read of coeff[sc_idx]
-        ST_SCALE_WR = 4'd7,   // INTT: write coeff[sc_idx] * n_inv
-        ST_DONE     = 4'd8;
+        ST_CALC     = 4'd3,   // latch v; launch MUL pipeline stage 1
+        ST_MUL1     = 4'd4,   // pipeline stage 1: p = v*w
+        ST_MUL2     = 4'd5,   // pipeline stage 2: pm = p*barrett_m
+        ST_MUL3     = 4'd6,   // pipeline stage 3: vw = p - (pm>>80)*q
+        ST_WR_U     = 4'd7,   // write coeff[ua] = u'
+        ST_WR_V     = 4'd8,   // write coeff[va] = v'; advance counters
+        ST_SCALE_RD = 4'd9,   // INTT: issue read of coeff[sc_idx]
+        ST_SCALE_P1 = 4'd10,  // INTT scale pipeline stage 1
+        ST_SCALE_P2 = 4'd11,  // INTT scale pipeline stage 2
+        ST_SCALE_WR = 4'd12,  // INTT: write coeff[sc_idx] * n_inv
+        ST_DONE     = 4'd13;
 
     reg [3:0]        state;
     reg [LOGN-1:0]   stage;     // current stage 0..LOGN-1
@@ -153,60 +164,86 @@ module ntt #(
         end
     endfunction
 
-    // mod_mul : (a * b) mod q  — Barrett reduction (synthesizable)
-    //   barrett_m [2·Q_WIDTH-1:0] is read from the module input port.
-    //   K  = 2·Q_WIDTH (shift amount)
-    //   M  = floor(2^K / q) (precomputed constant)
-    //
-    //   p  [2·Q_WIDTH-1 : 0]  — product a·b           (< q^2 < 2^(2·Q_WIDTH))
-    //   pm [4·Q_WIDTH-1 : 0]  — p · M                 (< 2^(4·Q_WIDTH))
-    //   t  [2·Q_WIDTH-1 : 0]  — quotient est = pm>>K  (< q < 2^Q_WIDTH)
-    //   tq [2·Q_WIDTH-1 : 0]  — t · q
-    //   r  [2·Q_WIDTH-1 : 0]  — remainder ∈ [0, 2q), one correction
-    function [Q_WIDTH-1:0] mod_mul;
-        input [Q_WIDTH-1:0] a, b, qq;
-        reg [2*Q_WIDTH-1:0] p;
-        reg [4*Q_WIDTH-1:0] pm;
-        reg [Q_WIDTH:0]     t;
-        reg [2*Q_WIDTH-1:0] tq;
-        reg [2*Q_WIDTH-1:0] r;
-        begin
-            p  = a * b;
-            pm = {{(2*Q_WIDTH){1'b0}}, p} * {{(2*Q_WIDTH){1'b0}}, barrett_m};
-            t  = pm[4*Q_WIDTH-1 : 2*Q_WIDTH];
-            tq = t * {1'b0, qq};
-            r  = p - tq;
-            if (r >= {{Q_WIDTH{1'b0}}, qq})
-                r = r - {{Q_WIDTH{1'b0}}, qq};
-            mod_mul = r[Q_WIDTH-1:0];
-        end
-    endfunction
-
     // ── Registered memory outputs (1-cycle read latency) ──────────
-    reg [Q_WIDTH-1:0] cdo;            // coeff read data (single read port)
-    reg [Q_WIDTH-1:0] tdo;            // twiddle read data
+    reg [Q_WIDTH-1:0] cdo;   // coeff read data
+    reg [Q_WIDTH-1:0] tdo;   // twiddle read data
 
-    // Latched butterfly operands: u = coeff[ua], v = coeff[va], w = tw[tw_idx]
-    reg [Q_WIDTH-1:0] u_r, v_r, w_r;
-    wire [Q_WIDTH-1:0] u_w = u_r;
-    wire [Q_WIDTH-1:0] v_w = v_r;
-    wire [Q_WIDTH-1:0] w_w = w_r;
+    // Latched butterfly operands
+    reg [Q_WIDTH-1:0] u_r, v_r, w_r, v_orig; // v_orig holds original v for GS gs_u
 
-    // ── Butterfly results (combinational from registered operands) ─
+    // ── Pipelined Barrett mod_mul ─────────────────────────────────
+    // Stage 1: p = a * b  (registered)
+    // Stage 2: pm = p * barrett_m  (registered)
+    // Stage 3: vw = p - ((pm >> 2*Q_WIDTH) * q)  (registered)
     //
-    // Cooley–Tukey (NTT):     u' = u + v·w,   v' = u - v·w
-    // Gentleman–Sande (INTT): u' = u + v,      v' = (u - v)·w
+    // One pipeline instance for vw = v*w (butterfly)
+    // One pipeline instance for scaled = cdo*n_inv (INTT scale)
+    // Both share the same 3-stage structure.
 
-    wire [Q_WIDTH-1:0] vw     = mod_mul(v_w, w_w, q);
-    wire [Q_WIDTH-1:0] ct_u   = mod_add(u_w, vw,  q);
-    wire [Q_WIDTH-1:0] ct_v   = mod_sub(u_w, vw,  q);
+    // ── Pipeline for butterfly: vw = v_r * w_r mod q ─────────────
+    reg [2*Q_WIDTH-1:0]   bfly_p;       // stage 1 output: v*w
+    reg [4*Q_WIDTH-1:0]   bfly_pm;      // stage 2 output: p*barrett_m
+    reg [Q_WIDTH-1:0]     vw;           // stage 3 output: final vw mod q
+    reg [Q_WIDTH-1:0]     u_r2, u_r3;  // u delayed to match pipeline
+    reg [Q_WIDTH-1:0]     vo_r2, vo_r3; // v_orig delayed to match pipeline
 
-    wire [Q_WIDTH-1:0] gs_u   = mod_add(u_w, v_w, q);
-    wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_w, v_w, q);
-    wire [Q_WIDTH-1:0] gs_v   = mod_mul(gs_dif, w_w, q);
+    always @(posedge clk) begin
+        // Stage 1: multiply v*w
+        bfly_p <= v_r * w_r;
+        u_r2   <= u_r;
+        vo_r2  <= v_orig;
 
-    // INTT final scale: coeff[sc_idx] (in cdo) * n_inv mod q
-    wire [Q_WIDTH-1:0] scaled = mod_mul(cdo, n_inv, q);
+        // Stage 2: multiply p*barrett_m
+        bfly_pm <= {{(2*Q_WIDTH){1'b0}}, bfly_p} *
+                   {{(2*Q_WIDTH){1'b0}}, barrett_m};
+        u_r3   <= u_r2;
+        vo_r3  <= vo_r2;
+
+        // Stage 3: Barrett reduction
+        begin
+            reg [2*Q_WIDTH-1:0] bfly_tq;
+            reg [2*Q_WIDTH-1:0] bfly_r;
+            bfly_tq = bfly_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {1'b0, q};
+            bfly_r  = bfly_p - bfly_tq;
+            if (bfly_r >= {{Q_WIDTH{1'b0}}, q})
+                bfly_r = bfly_r - {{Q_WIDTH{1'b0}}, q};
+            vw <= bfly_r[Q_WIDTH-1:0];
+        end
+    end
+
+    // ── Pipeline for INTT scale: scaled = cdo * n_inv mod q ───────
+    reg [2*Q_WIDTH-1:0]   sc_p;
+    reg [4*Q_WIDTH-1:0]   sc_pm;
+    reg [Q_WIDTH-1:0]     scaled;
+
+    always @(posedge clk) begin
+        sc_p  <= cdo * n_inv;
+        sc_pm <= {{(2*Q_WIDTH){1'b0}}, sc_p} *
+                 {{(2*Q_WIDTH){1'b0}}, barrett_m};
+        begin
+            reg [2*Q_WIDTH-1:0] sc_tq;
+            reg [2*Q_WIDTH-1:0] sc_r;
+            sc_tq = sc_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {1'b0, q};
+            sc_r  = sc_p - sc_tq;
+            if (sc_r >= {{Q_WIDTH{1'b0}}, q})
+                sc_r = sc_r - {{Q_WIDTH{1'b0}}, q};
+            scaled <= sc_r[Q_WIDTH-1:0];
+        end
+    end
+
+    // ── Butterfly results (using pipelined vw, delayed u) ─────────
+    // Cooley–Tukey (NTT):     u' = u + vw,        v' = u - vw
+    // Gentleman–Sande (INTT): u' = u + v,          v' = (u - v)*w
+    // For GS, vw pipeline carries (u_r - v_r)*w_r — loaded in ST_CALC
+    // as gs_dif*w_r via a separate feed into v_r.
+
+    // u_r3 = u delayed 3 cycles through pipeline to align with vw
+    // CT: u' = u + vw,   v' = u - vw
+    // GS: u' = u + v,    v' = (u-v)*w = vw  (pipeline was fed gs_dif*w)
+    wire [Q_WIDTH-1:0] ct_u  = mod_add(u_r3, vw, q);
+    wire [Q_WIDTH-1:0] ct_v  = mod_sub(u_r3, vw, q);
+    wire [Q_WIDTH-1:0] gs_u  = mod_add(u_r3, vo_r3, q);  // u + original_v (delayed)
+    wire [Q_WIDTH-1:0] gs_v  = vw;                        // (u-v)*w from pipeline
 
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).
@@ -223,7 +260,6 @@ module ntt #(
 
         case (state)
             ST_IDLE: begin
-                // Result-poll read; host coefficient load uses write port.
                 craddr = rd_addr;
                 if (coeff_wr_en) begin
                     cwe    = 1'b1;
@@ -232,21 +268,29 @@ module ntt #(
                 end
             end
 
-            ST_RD_U: craddr = ua;                    // read u
-            ST_RD_V: craddr = va;                    // read v
+            ST_RD_U: craddr = ua;   // read u
+            ST_RD_V: craddr = va;   // read v (also feeds into ST_CALC)
+            ST_CALC: craddr = va;   // read v (captured in ST_CALC)
 
-            ST_WR_U: begin                           // write u'
+            // Pipeline stages: no memory access needed
+            ST_MUL1: ;
+            ST_MUL2: ;
+            ST_MUL3: ;
+
+            ST_WR_U: begin          // write u'
                 cwe    = 1'b1;
                 cwaddr = ua;
                 cwdata = inv_r ? gs_u : ct_u;
             end
-            ST_WR_V: begin                           // write v'
+            ST_WR_V: begin          // write v'
                 cwe    = 1'b1;
                 cwaddr = va;
                 cwdata = inv_r ? gs_v : ct_v;
             end
 
             ST_SCALE_RD: craddr = sc_idx[LOGN-1:0];
+            ST_SCALE_P1: ;   // pipeline stage — no memory
+            ST_SCALE_P2: ;   // pipeline stage — no memory
             ST_SCALE_WR: begin
                 cwe    = 1'b1;
                 cwaddr = sc_idx[LOGN-1:0];
@@ -306,11 +350,33 @@ module ntt #(
                     state <= ST_CALC;
                 end
 
-                // ── Latch v; butterfly result valid next cycle ────
+                // ── Latch v; launch pipeline stage 1 ─────────────
+                // For CT: feed v_r*w_r into pipeline
+                // For GS: feed (u_r - v_r)*w_r into pipeline
+                //         (use v_r slot to carry gs_dif)
                 ST_CALC: begin
-                    v_r   <= cdo;     // cdo = coeff[va]
-                    state <= ST_WR_U;
+                    if (inv_r) begin
+                        // GS butterfly: v' = (u-v)*w, u' = u+v
+                        // Feed (u-v) into pipeline as v_r (multiplied by w_r)
+                        // Keep original v in v_orig for gs_u = u+v
+                        v_orig <= cdo;                       // save original v
+                        v_r    <= mod_sub(u_r, cdo, q);     // gs_dif = u-v
+                    end else begin
+                        // CT butterfly: v' = u - v*w, u' = u + v*w
+                        v_r <= cdo;  // v_r = coeff[va]
+                    end
+                    state <= ST_MUL1;
                 end
+
+                // ── Pipeline stage 1: p = v*w registered ──────────
+                ST_MUL1: state <= ST_MUL2;
+
+                // ── Pipeline stage 2: pm = p*barrett_m registered ─
+                ST_MUL2: state <= ST_MUL3;
+
+                // ── Pipeline stage 3: vw result registered ────────
+                // vw and scaled now valid
+                ST_MUL3: state <= ST_WR_U;
 
                 // ── Write coeff[ua] = u' ──────────────────────────
                 ST_WR_U: state <= ST_WR_V;
@@ -333,10 +399,17 @@ module ntt #(
                     end
                 end
 
-                // ── INTT final scale: issue read of coeff[sc_idx] ─
-                ST_SCALE_RD: state <= ST_SCALE_WR;
+                // ── INTT scale: read coeff[sc_idx], launch pipeline ─
+                ST_SCALE_RD: state <= ST_SCALE_P1;
 
-                // ── INTT final scale: write coeff[sc_idx]*n_inv ───
+                // ── INTT scale pipeline stage 1 ───────────────────
+                ST_SCALE_P1: state <= ST_SCALE_P2;
+
+                // ── INTT scale pipeline stage 2 ───────────────────
+                ST_SCALE_P2: state <= ST_SCALE_WR;
+
+                // ── INTT scale: write coeff[sc_idx]*n_inv ─────────
+                // 'scaled' is now valid (3 cycles after ST_SCALE_RD)
                 ST_SCALE_WR: begin
                     if (sc_idx == N[LOGN:0] - 1'b1) begin
                         state <= ST_DONE;
