@@ -200,7 +200,7 @@ module ntt #(
         vo_r3  <= vo_r2;
 
         // Stage 3: Barrett reduction
-        begin
+        begin : bfly_barrett
             reg [2*Q_WIDTH-1:0] bfly_tq;
             reg [2*Q_WIDTH-1:0] bfly_r;
             bfly_tq = bfly_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {1'b0, q};
@@ -220,7 +220,7 @@ module ntt #(
         sc_p  <= cdo * n_inv;
         sc_pm <= {{(2*Q_WIDTH){1'b0}}, sc_p} *
                  {{(2*Q_WIDTH){1'b0}}, barrett_m};
-        begin
+        begin : sc_barrett
             reg [2*Q_WIDTH-1:0] sc_tq;
             reg [2*Q_WIDTH-1:0] sc_r;
             sc_tq = sc_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {1'b0, q};
