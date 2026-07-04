@@ -141,6 +141,15 @@ module ntt #(
     wire [LOGN:0] tw_base = inv_r ? N[LOGN:0] : {(LOGN+1){1'b0}};
     wire [LOGN:0] tw_idx  = tw_base + {1'b0, m_val} + {1'b0, grp};
 
+    // ── Next-butterfly address generation (prefetch, k+1) ─────────
+    wire [LOGN-1:0] k_p1      = k + 1'b1;
+    wire [LOGN-1:0] grp_p1    = k_p1 >> ts;
+    wire [LOGN-1:0] off_p1    = k_p1 & (t_val - 1'b1);
+    wire [LOGN-1:0] ua_p1     = (grp_p1 << (ts + 1'b1)) | off_p1;
+    wire [LOGN-1:0] va_p1     = ua_p1 | t_val;
+    wire [LOGN:0]   tw_idx_p1 = tw_base + {1'b0, m_val} + {1'b0, grp_p1};
+    wire            do_pref   = (k != K_MAX[LOGN-1:0]); // false on last butterfly
+
     // ── Behavioural modular arithmetic ────────────────────────────
     // mod_add : (a + b) mod q
     function automatic [Q_WIDTH-1:0] mod_add;
@@ -171,6 +180,9 @@ module ntt #(
     // Latched butterfly operands
     reg [Q_WIDTH-1:0] u_r, v_r, w_r, v_orig; // v_orig holds original v for GS gs_u
 
+    // Prefetched operands for next butterfly (loaded during MUL1/MUL2/MUL3)
+    reg [Q_WIDTH-1:0] u_nxt, v_nxt, w_nxt;
+
     // ── Pipelined Barrett mod_mul ─────────────────────────────────
     // Stage 1: p = a * b  (registered)
     // Stage 2: pm = p * barrett_m  (registered)
@@ -181,8 +193,8 @@ module ntt #(
     // Both share the same 3-stage structure.
 
     // ── Pipeline for butterfly: vw = v_r * w_r mod q ─────────────
-    reg [2*Q_WIDTH-1:0]   bfly_p;       // stage 1 output: v*w
-    reg [4*Q_WIDTH-1:0]   bfly_pm;      // stage 2 output: p*barrett_m
+    (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   bfly_p;   // stage 1: v*w
+    (* use_dsp = "yes" *) reg [4*Q_WIDTH-1:0]   bfly_pm;  // stage 2: p*barrett_m
     reg [Q_WIDTH-1:0]     vw;           // stage 3 output: final vw mod q
     reg [Q_WIDTH-1:0]     u_r2, u_r3;  // u delayed to match pipeline
     reg [Q_WIDTH-1:0]     vo_r2, vo_r3; // v_orig delayed to match pipeline
@@ -212,8 +224,8 @@ module ntt #(
     end
 
     // ── Pipeline for INTT scale: scaled = cdo * n_inv mod q ───────
-    reg [2*Q_WIDTH-1:0]   sc_p;
-    reg [4*Q_WIDTH-1:0]   sc_pm;
+    (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   sc_p;
+    (* use_dsp = "yes" *) reg [4*Q_WIDTH-1:0]   sc_pm;
     reg [Q_WIDTH-1:0]     scaled;
 
     always @(posedge clk) begin
@@ -272,9 +284,11 @@ module ntt #(
             ST_RD_V: craddr = va;   // read v (also feeds into ST_CALC)
             ST_CALC: craddr = va;   // read v (captured in ST_CALC)
 
-            // Pipeline stages: no memory access needed
-            ST_MUL1: ;
-            ST_MUL2: ;
+            // During MUL pipeline, prefetch next butterfly's coefficients.
+            // MUL1: read coeff[ua_p1]  → arrives at cdo on MUL2
+            // MUL2: read coeff[va_p1]  → arrives at cdo on MUL3
+            ST_MUL1: craddr = do_pref ? ua_p1 : ua;
+            ST_MUL2: craddr = do_pref ? va_p1 : ua;
             ST_MUL3: ;
 
             ST_WR_U: begin          // write u'
@@ -309,9 +323,12 @@ module ntt #(
     end
 
     // ── Twiddle RAM: simple dual-port (1 write, 1 registered read) ─
+    // During MUL1 we redirect the read to tw_idx_p1 so the next
+    // butterfly's twiddle factor arrives at MUL2 (1-cycle BRAM latency).
+    wire [LOGN:0] tw_rd_idx = (state == ST_MUL1 && do_pref) ? tw_idx_p1 : tw_idx;
     always @(posedge clk) begin
         if (tw_wr_en) tw[tw_wr_addr] <= tw_wr_data;
-        tdo <= tw[tw_idx];
+        tdo <= tw[tw_rd_idx];
     end
 
     // Result read-back: coeff read output (1-cycle latency)
@@ -372,11 +389,21 @@ module ntt #(
                 ST_MUL1: state <= ST_MUL2;
 
                 // ── Pipeline stage 2: pm = p*barrett_m registered ─
-                ST_MUL2: state <= ST_MUL3;
+                // cdo = coeff[ua_p1], tdo = tw[tw_idx_p1] now ready.
+                ST_MUL2: begin
+                    if (do_pref) begin
+                        u_nxt <= cdo;   // coeff[ua_p1]
+                        w_nxt <= tdo;   // tw[tw_idx_p1]
+                    end
+                    state <= ST_MUL3;
+                end
 
                 // ── Pipeline stage 3: vw result registered ────────
-                // vw and scaled now valid
-                ST_MUL3: state <= ST_WR_U;
+                // cdo = coeff[va_p1] now ready.
+                ST_MUL3: begin
+                    if (do_pref) v_nxt <= cdo;  // coeff[va_p1]
+                    state <= ST_WR_U;
+                end
 
                 // ── Write coeff[ua] = u' ──────────────────────────
                 ST_WR_U: state <= ST_WR_V;
@@ -384,9 +411,9 @@ module ntt #(
                 // ── Write coeff[va] = v'; advance counters ────────
                 ST_WR_V: begin
                     if (k == K_MAX[LOGN-1:0]) begin
+                        // Last butterfly in stage — normal path for next stage
                         k <= 0;
                         if (stage == S_MAX[LOGN-1:0]) begin
-                            // All LOGN stages complete
                             sc_idx <= 0;
                             state  <= inv_r ? ST_SCALE_RD : ST_DONE;
                         end else begin
@@ -394,8 +421,18 @@ module ntt #(
                             state <= ST_RD_U;
                         end
                     end else begin
-                        k     <= k + 1'b1;
-                        state <= ST_RD_U;
+                        // Fast path: prefetch already done during MUL stages.
+                        // Skip RD_U → RD_V → CALC and jump straight to MUL1.
+                        k  <= k + 1'b1;
+                        u_r <= u_nxt;
+                        w_r <= w_nxt;
+                        if (inv_r) begin
+                            v_orig <= v_nxt;
+                            v_r    <= mod_sub(u_nxt, v_nxt, q); // GS: (u-v)*w
+                        end else begin
+                            v_r <= v_nxt;                        // CT: v*w
+                        end
+                        state <= ST_MUL1;
                     end
                 end
 
