@@ -94,12 +94,14 @@ module ntt #(
         ST_CALC     = 4'd3,   // latch v; launch MUL pipeline stage 1
         ST_MUL1     = 4'd4,   // pipeline stage 1: p = v*w
         ST_MUL2     = 4'd5,   // pipeline stage 2: pm = p*barrett_m
-        ST_MUL3     = 4'd6,   // pipeline stage 3: vw = p - (pm>>80)*q
+        ST_MUL3     = 4'd6,   // pipeline stage 3: tq = (pm>>80)*q  (DSP)
+        ST_MUL4     = 4'd14,  // pipeline stage 4: vw = p - tq
         ST_WR_U     = 4'd7,   // write coeff[ua] = u'
         ST_WR_V     = 4'd8,   // write coeff[va] = v'; advance counters
         ST_SCALE_RD = 4'd9,   // INTT: issue read of coeff[sc_idx]
         ST_SCALE_P1 = 4'd10,  // INTT scale pipeline stage 1
         ST_SCALE_P2 = 4'd11,  // INTT scale pipeline stage 2
+        ST_SCALE_P3 = 4'd15,  // INTT scale pipeline stage 3: tq = (pm>>80)*q (DSP)
         ST_SCALE_WR = 4'd12,  // INTT: write coeff[sc_idx] * n_inv
         ST_DONE     = 4'd13;
 
@@ -193,11 +195,12 @@ module ntt #(
     // Both share the same 3-stage structure.
 
     // ── Pipeline for butterfly: vw = v_r * w_r mod q ─────────────
-    (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   bfly_p;   // stage 1: v*w
-    (* use_dsp = "yes" *) reg [4*Q_WIDTH-1:0]   bfly_pm;  // stage 2: p*barrett_m
-    reg [Q_WIDTH-1:0]     vw;           // stage 3 output: final vw mod q
-    reg [Q_WIDTH-1:0]     u_r2, u_r3;  // u delayed to match pipeline
-    reg [Q_WIDTH-1:0]     vo_r2, vo_r3; // v_orig delayed to match pipeline
+    (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   bfly_p;    // stage 1: v*w
+    (* use_dsp = "yes" *) reg [4*Q_WIDTH-1:0]   bfly_pm;   // stage 2: p*barrett_m
+    (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   bfly_tq;   // stage 3: (pm>>80)*q
+    reg [Q_WIDTH-1:0]     vw;            // stage 4 output: final vw mod q
+    reg [Q_WIDTH-1:0]     u_r2, u_r3, u_r4;    // u delayed to match pipeline
+    reg [Q_WIDTH-1:0]     vo_r2, vo_r3, vo_r4;  // v_orig delayed to match pipeline
 
     always @(posedge clk) begin
         // Stage 1: multiply v*w
@@ -211,12 +214,16 @@ module ntt #(
         u_r3   <= u_r2;
         vo_r3  <= vo_r2;
 
-        // Stage 3: Barrett reduction
+        // Stage 3: register tq = (pm>>80)*q using DSP
+        // bfly_p is stable here (v_r/w_r unchanged during MUL stages)
+        bfly_tq <= bfly_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {{Q_WIDTH{1'b0}}, q};
+        u_r4    <= u_r3;
+        vo_r4   <= vo_r3;
+
+        // Stage 4: final subtraction only (no multiply → short path)
         begin : bfly_barrett
-            reg [2*Q_WIDTH-1:0] bfly_tq;
             reg [2*Q_WIDTH-1:0] bfly_r;
-            bfly_tq = bfly_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {1'b0, q};
-            bfly_r  = bfly_p - bfly_tq;
+            bfly_r = bfly_p - bfly_tq;
             if (bfly_r >= {{Q_WIDTH{1'b0}}, q})
                 bfly_r = bfly_r - {{Q_WIDTH{1'b0}}, q};
             vw <= bfly_r[Q_WIDTH-1:0];
@@ -226,17 +233,27 @@ module ntt #(
     // ── Pipeline for INTT scale: scaled = cdo * n_inv mod q ───────
     (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   sc_p;
     (* use_dsp = "yes" *) reg [4*Q_WIDTH-1:0]   sc_pm;
+    (* use_dsp = "yes" *) reg [2*Q_WIDTH-1:0]   sc_tq;   // stage 3: (pm>>80)*q
+    reg [2*Q_WIDTH-1:0]   sc_p_d1, sc_p_d2;               // sc_p delayed 2 cycles
     reg [Q_WIDTH-1:0]     scaled;
 
     always @(posedge clk) begin
-        sc_p  <= cdo * n_inv;
-        sc_pm <= {{(2*Q_WIDTH){1'b0}}, sc_p} *
-                 {{(2*Q_WIDTH){1'b0}}, barrett_m};
+        // Stage 1: p = cdo * n_inv
+        sc_p    <= cdo * n_inv;
+        sc_p_d1 <= sc_p;     // delay sc_p to align with stage 4
+
+        // Stage 2: pm = sc_p * barrett_m
+        sc_pm   <= {{(2*Q_WIDTH){1'b0}}, sc_p} *
+                   {{(2*Q_WIDTH){1'b0}}, barrett_m};
+        sc_p_d2 <= sc_p_d1;  // delay sc_p one more cycle
+
+        // Stage 3: register tq = (pm>>80)*q using DSP
+        sc_tq   <= sc_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {{Q_WIDTH{1'b0}}, q};
+
+        // Stage 4: final subtraction only (no multiply → short path)
         begin : sc_barrett
-            reg [2*Q_WIDTH-1:0] sc_tq;
             reg [2*Q_WIDTH-1:0] sc_r;
-            sc_tq = sc_pm[4*Q_WIDTH-1:2*Q_WIDTH] * {1'b0, q};
-            sc_r  = sc_p - sc_tq;
+            sc_r = sc_p_d2 - sc_tq;  // sc_p_d2 = sc_p from stage 1
             if (sc_r >= {{Q_WIDTH{1'b0}}, q})
                 sc_r = sc_r - {{Q_WIDTH{1'b0}}, q};
             scaled <= sc_r[Q_WIDTH-1:0];
@@ -249,12 +266,12 @@ module ntt #(
     // For GS, vw pipeline carries (u_r - v_r)*w_r — loaded in ST_CALC
     // as gs_dif*w_r via a separate feed into v_r.
 
-    // u_r3 = u delayed 3 cycles through pipeline to align with vw
+    // u_r4 = u delayed 4 cycles through pipeline to align with vw
     // CT: u' = u + vw,   v' = u - vw
     // GS: u' = u + v,    v' = (u-v)*w = vw  (pipeline was fed gs_dif*w)
-    wire [Q_WIDTH-1:0] ct_u  = mod_add(u_r3, vw, q);
-    wire [Q_WIDTH-1:0] ct_v  = mod_sub(u_r3, vw, q);
-    wire [Q_WIDTH-1:0] gs_u  = mod_add(u_r3, vo_r3, q);  // u + original_v (delayed)
+    wire [Q_WIDTH-1:0] ct_u  = mod_add(u_r4, vw, q);
+    wire [Q_WIDTH-1:0] ct_v  = mod_sub(u_r4, vw, q);
+    wire [Q_WIDTH-1:0] gs_u  = mod_add(u_r4, vo_r4, q);  // u + original_v (delayed)
     wire [Q_WIDTH-1:0] gs_v  = vw;                        // (u-v)*w from pipeline
 
     // ── Coefficient memory port control (combinational mux) ───────
@@ -398,12 +415,15 @@ module ntt #(
                     state <= ST_MUL3;
                 end
 
-                // ── Pipeline stage 3: vw result registered ────────
+                // ── Pipeline stage 3: tq = (pm>>80)*q registered ─
                 // cdo = coeff[va_p1] now ready.
                 ST_MUL3: begin
                     if (do_pref) v_nxt <= cdo;  // coeff[va_p1]
-                    state <= ST_WR_U;
+                    state <= ST_MUL4;
                 end
+
+                // ── Pipeline stage 4: vw = p - tq (subtraction only) ─
+                ST_MUL4: state <= ST_WR_U;
 
                 // ── Write coeff[ua] = u' ──────────────────────────
                 ST_WR_U: state <= ST_WR_V;
@@ -443,7 +463,10 @@ module ntt #(
                 ST_SCALE_P1: state <= ST_SCALE_P2;
 
                 // ── INTT scale pipeline stage 2 ───────────────────
-                ST_SCALE_P2: state <= ST_SCALE_WR;
+                ST_SCALE_P2: state <= ST_SCALE_P3;
+
+                // ── INTT scale pipeline stage 3: tq registered ────
+                ST_SCALE_P3: state <= ST_SCALE_WR;
 
                 // ── INTT scale: write coeff[sc_idx]*n_inv ─────────
                 // 'scaled' is now valid (3 cycles after ST_SCALE_RD)
