@@ -11,14 +11,21 @@
 #   make clean    → remove build artefacts
 # ================================================================
 
-LOGN    ?= 13
-Q_WIDTH ?= 40
-CT_SIZE ?= 3
+LOGN     ?= 13
+Q_WIDTH  ?= 40
+CT_SIZE  ?= 3
+N_PRIMES ?= 3
+SEL_W    ?= 2    # ceil(log2(N_PRIMES)); update when changing N_PRIMES
 
 # ── NTT target ────────────────────────────────────────────────
 NTT_TOP  := ntt
 NTT_VDIR := obj_dir
 NTT_LIB  := ../src/ntt_hw.so
+
+# ── RNS NTT target ───────────────────────────────────────────
+RNS_TOP  := rns_ntt
+RNS_VDIR := obj_dir_rns
+RNS_LIB  := ../src/rns_ntt_hw.so
 
 # ── Hash verifier target ──────────────────────────────────────
 HV_TOP   := hash_verifier
@@ -59,6 +66,39 @@ $(NTT_LIB): $(NTT_VDIR)/Vntt__ALL.a ntt_sim.cpp
 	@echo "✓  Built $(NTT_LIB)"
 
 # ════════════════════════════════════════════════════════════════
+# RNS NTT shared library
+# Verilog sources: rns_ntt → ntt (N_PRIMES instances)
+# ════════════════════════════════════════════════════════════════
+
+RNS_SRCS := rns_ntt.v ntt.v
+
+$(RNS_VDIR)/V$(RNS_TOP).mk: $(RNS_SRCS)
+	$(VERILATOR) --cc \
+	    -GLOGN=$(LOGN) -GQ_WIDTH=$(Q_WIDTH) -GN_PRIMES=$(N_PRIMES) -GSEL_W=$(SEL_W) \
+	    --Mdir $(RNS_VDIR) \
+	    --Wno-WIDTHTRUNC --Wno-WIDTHEXPAND \
+	    --top-module $(RNS_TOP) \
+	    $(RNS_SRCS)
+
+$(RNS_VDIR)/V$(RNS_TOP)__ALL.a: $(RNS_VDIR)/V$(RNS_TOP).mk
+	$(MAKE) -C $(RNS_VDIR) -f V$(RNS_TOP).mk
+
+$(RNS_LIB): $(RNS_VDIR)/V$(RNS_TOP)__ALL.a rns_ntt_sim.cpp
+	$(CXX) $(CXXFLAGS) \
+	    -shared \
+	    -I$(RNS_VDIR) \
+	    -I$(VERILATOR_ROOT)/include \
+	    -I$(VERILATOR_ROOT)/include/vltstd \
+	    -DN_PRIMES=$(N_PRIMES) \
+	    rns_ntt_sim.cpp \
+	    $(RNS_VDIR)/V$(RNS_TOP)__ALL.a \
+	    $(RNS_VDIR)/libverilated.a \
+	    -o $(RNS_LIB)
+	@echo "✓  Built $(RNS_LIB)"
+
+rns_ntt: $(RNS_LIB)
+
+# ════════════════════════════════════════════════════════════════
 # Hash verifier shared library
 # Verilog sources: hash_verifier → cipher_hash → poly_mul → ntt
 #                                              → poly_add
@@ -94,6 +134,6 @@ hash_verifier: $(HV_LIB)
 
 # ════════════════════════════════════════════════════════════════
 clean:
-	rm -rf $(NTT_VDIR) $(HV_VDIR) $(NTT_LIB) $(HV_LIB)
+	rm -rf $(NTT_VDIR) $(RNS_VDIR) $(HV_VDIR) $(NTT_LIB) $(RNS_LIB) $(HV_LIB)
 
-.PHONY: all hash_verifier clean
+.PHONY: all rns_ntt hash_verifier clean

@@ -879,6 +879,318 @@ Multiplicative depth $\approx 5$--$20$ depending on parameters.
 \end{frame}
 
 % ================================================================
+\section{NTT Hardware Optimisation}
+% ================================================================
+
+\begin{frame}{NTT FSM Design --- Three Versions}
+The NTT butterfly evolved across three versions, each making a trade-off between \textbf{timing} and \textbf{cycle count}:
+
+\vspace{0.4em}
+\begin{center}
+\begin{tabular}{clcc}
+\toprule
+\textbf{Version} & \textbf{States} & \textbf{Cycles/butterfly} & \textbf{Problem solved} \\
+\midrule
+V1 & 5  & $\sim$160K total & Simple, but timing violation \\
+V2 & 8  & 425,984 total    & Timing fixed, but more cycles \\
+V3 & 9  & 319,488 total    & Critical path shortened further \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.4em}
+\begin{alertblock}{The fundamental trade-off}
+Every time you add a pipeline stage to fix timing, you add cycles. The key challenge is fixing timing without paying too high a cycle cost.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Version 1 --- 5 States (Conceptual Butterfly)}
+The simplest possible design: Barrett reduction done entirely \textbf{combinationally} in one clock.
+
+\vspace{0.3em}
+\begin{center}
+\ttfamily\small
+RD\_U $\to$ RD\_V $\to$ CALC $\to$ WR\_U $\to$ WR\_V
+\end{center}
+
+\vspace{0.3em}
+\begin{center}
+\small
+\begin{tabular}{cll}
+\toprule
+\textbf{State} & \textbf{Action} & \textbf{Note} \\
+\midrule
+\texttt{RD\_U} & Read $u$ from BRAM & \\
+\texttt{RD\_V} & Latch $u$, $w$; read $v$ & \\
+\texttt{CALC}  & Latch $v$; compute $vw = (v \times w) \bmod q$ & All Barrett here \\
+\texttt{WR\_U} & Write $u' = u + vw$ & \\
+\texttt{WR\_V} & Write $v' = u - vw$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Cycle count:}
+\[5 \times 4096 \times 13 = 266{,}240\]
+
+\column{0.5\textwidth}
+\begin{alertblock}{Problem}
+Barrett = two 40-bit multiplies chained $\to$ $\sim$60+ ns in one clock. \textbf{Timing violation.}
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Version 2 --- 8 States (Pipeline Barrett)}
+Fix timing by splitting Barrett across \textbf{3 pipeline stages} (MUL1, MUL2, MUL3):
+
+\vspace{0.3em}
+\begin{center}
+\ttfamily\small
+RD\_U $\to$ RD\_V $\to$ CALC $\to$ \textbf{MUL1 $\to$ MUL2 $\to$ MUL3} $\to$ WR\_U $\to$ WR\_V
+\end{center}
+
+\vspace{0.3em}
+\begin{center}
+\small
+\begin{tabular}{cll}
+\toprule
+\textbf{New State} & \textbf{Action} & \textbf{Delay} \\
+\midrule
+\texttt{MUL1} & $p = v \times w$                        & $\sim$10 ns \\
+\texttt{MUL2} & $p_m = p \times \texttt{barrett\_m}$    & $\sim$10 ns \\
+\texttt{MUL3} & $vw = p - tq$ \quad (\textit{tq still LUT}) & $\sim$32 ns \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Cycle count increases:}
+\[8 \times 4096 \times 13 = \mathbf{425{,}984}\]
+3 extra states = 160K extra cycles
+
+\column{0.5\textwidth}
+\begin{alertblock}{New problem}
+MUL3 still combines $tq = t \times q$ and subtraction in one clock $\to$ 32.1 ns critical path. WNS = +17.9 ns.
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Version 3 --- 9 States (Split MUL3)}
+Fix the remaining critical path by registering $tq$ as a dedicated \textbf{DSP48 stage}:
+
+\vspace{0.3em}
+\begin{center}
+\ttfamily\small
+RD\_U $\to$ RD\_V $\to$ CALC $\to$ MUL1 $\to$ MUL2 $\to$ MUL3 $\to$ \textbf{MUL4} $\to$ WR\_U $\to$ WR\_V
+\end{center}
+
+\vspace{0.3em}
+\begin{center}
+\small
+\begin{tabular}{cll}
+\toprule
+\textbf{State} & \textbf{Action} & \textbf{Delay} \\
+\midrule
+\texttt{MUL3} & $\texttt{bfly\_tq} \leftarrow (p_m \gg 80) \times q$ \quad (DSP48) & $\sim$10 ns \\
+\texttt{MUL4} & $vw = p - \texttt{bfly\_tq}$ \quad (subtraction only) & $\sim$12 ns \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{One extra cycle:}
+\[9 \times 4096 \times 13 = \mathbf{479{,}232}\]
+But clock is now faster.
+
+\column{0.5\textwidth}
+\begin{block}{Timing improvement}
+\centering
+WNS: $17.9 \to 27.5$ ns\\
+Critical path: $32.1 \to 22.5$ ns\\
+Max freq: $31 \to 44$ MHz
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{The Prefetch --- Recovering Lost Cycles}
+Each version added pipeline stages to fix timing but increased cycle count. The \textbf{FSM prefetch} recovers those cycles by overlapping butterfly reads with multiply stages:
+
+\vspace{0.3em}
+\begin{center}
+\ttfamily\scriptsize
+\begin{tabular}{cccccccccc}
+$k$:   & RD\_U & RD\_V & CALC & MUL1 & MUL2 & MUL3 & MUL4 & WR\_U & WR\_V \\
+$k{+}1$: & & & & [u] & [v,w] & [v] & --- & MUL1 & $\to$ \\
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+During MUL1--MUL3 the BRAM is idle. Prefetch uses those free cycles to read $u$, $v$, $w$ for butterfly $k+1$. At \texttt{WR\_V} the fast-path jumps directly to \texttt{MUL1}, skipping \texttt{RD\_U}, \texttt{RD\_V}, \texttt{CALC}.
+
+\vspace{0.3em}
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Version} & \textbf{Without prefetch} & \textbf{With prefetch} \\
+\midrule
+V1 (5 states) & 266,240 cycles & already fast \\
+V2 (8 states) & 425,984 cycles & 266,240 cycles \\
+V3 (9 states) & 479,232 cycles & 319,488 cycles \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Understanding WNS}
+\textbf{WNS (Worst Negative Slack)} measures one thing only:
+
+\vspace{0.3em}
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={draw, rectangle, minimum width=1.8cm, minimum height=0.8cm, fill=blue!10},
+  arr/.style={-{Stealth}, thick}
+]
+\node[box] (a) {Reg A};
+\node[box, right=3cm of a] (logic) {Combinational Logic};
+\node[box, right=3cm of logic] (b) {Reg B};
+\draw[->, thick] (a) -- (logic);
+\draw[->, thick] (logic) -- (b);
+\node[below=0.3cm of logic]{\small Must finish $<$ clock period};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.3em}
+\[
+  \text{WNS} = \text{Clock Period} - \text{Critical Path Delay}
+\]
+
+\begin{itemize}
+  \item WNS $> 0$ $\Rightarrow$ logic finishes in time $\Rightarrow$ \textcolor{green!60!black}{\textbf{PASS}}
+  \item WNS $< 0$ $\Rightarrow$ logic misses clock edge $\Rightarrow$ \textcolor{red}{\textbf{FAIL}}
+\end{itemize}
+
+\vspace{0.3em}
+\begin{alertblock}{Why parallelising does NOT improve WNS}
+Parallelising reduces the number of times we traverse the critical path, not how long that path takes. Even with 500 fewer cycles, a 32 ns path still takes 32 ns to travel from register to register.
+To improve WNS you must \textbf{shorten the critical path itself}.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Finding the Bottleneck with Vivado}
+Vivado provides a built-in timing report listing every logic cell and its delay along the critical path:
+
+\vspace{0.2cm}
+\begin{center}
+\texttt{Reports $\to$ Timing $\to$ Report Timing Summary}\\
+\texttt{$\to$ Intra Clock Paths $\to$ Setup $\to$ double-click worst path}
+\end{center}
+
+\vspace{0.3em}
+This revealed the critical path was \textbf{Barrett Stage 3} in the INTT scale block:
+
+\vspace{0.2em}
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Operation} & \textbf{Implementation} & \textbf{Delay} \\
+\midrule
+$tq = t \times q$       & LUT/DSP chain  & $\sim$18 ns \\
+$r = p - tq$             & CARRY4 chain   & $\sim$8 ns \\
+if $r \geq q$: $r -= q$ & CARRY4 chain   & $\sim$6 ns \\
+\midrule
+\textbf{Total (one clock)} & & \textbf{32.1 ns} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+With a 50 ns constraint: $\text{WNS} = 50 - 32.1 = \mathbf{+17.9\,\text{ns}}$
+\end{frame}
+
+\begin{frame}{DSP48 --- Dedicated Multiply Hardware}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{LUT-based multiply:}
+\begin{itemize}\small
+  \item Built from thousands of general-purpose LUT gates
+  \item Signal travels through every gate
+  \item $\sim$31 ns for 40-bit multiply
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{DSP48-based multiply:}
+\begin{itemize}\small
+  \item Dedicated silicon block on the FPGA
+  \item Hardwired for multiply/accumulate
+  \item $\sim$3--5 ns for same operation
+\end{itemize}
+\end{columns}
+
+\vspace{0.5em}
+Forced in \texttt{ntt.v} using the Vivado attribute:
+\begin{center}
+\ttfamily\small
+(* use\_dsp = "yes" *) reg [2*Q\_WIDTH-1:0] bfly\_tq;
+\end{center}
+
+\vspace{0.3em}
+Applied to four registers: \texttt{bfly\_p}, \texttt{bfly\_pm}, \texttt{sc\_p}, \texttt{sc\_pm}, \texttt{bfly\_tq}, \texttt{sc\_tq}.
+
+\vspace{0.3em}
+\begin{block}{Effect}
+Vivado replaces LUT multiply with DSP48 block. LUT utilisation drops; DSP utilisation rises; critical path shortens significantly.
+\end{block}
+\end{frame}
+\end{frame}
+
+\begin{frame}{Full Results --- All Three Versions}
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Metric} & \textbf{V1 (5 states)} & \textbf{V2 (8 states)} & \textbf{V3 (9 states)} & \textbf{V3 + Prefetch} \\
+\midrule
+States/butterfly   & 5       & 8       & 9       & 6 effective \\
+Total cycles       & 266,240 & 425,984 & 479,232 & \textbf{319,488} \\
+WNS                & violation & 17.9 ns & \textbf{27.5 ns} & \textbf{27.5 ns} \\
+Critical path      & 60+ ns  & 32.1 ns & \textbf{22.5 ns} & \textbf{22.5 ns} \\
+Max frequency      & ---     & 31 MHz  & \textbf{44 MHz}  & \textbf{44 MHz}  \\
+Runtime            & ---     & 13.7 ms & 10.9 ms & \textbf{7.3 ms}  \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{Key insight}
+\centering
+$T_{\text{total}} = \text{Cycles} \times \text{Period}$\\
+Fix timing AND reduce cycles.
+\end{block}
+
+\column{0.5\textwidth}
+\begin{alertblock}{End-to-end speedup}
+\centering
+V2 baseline: $13.7$ ms\\
+V3 + Prefetch: $7.3$ ms\\
+$\approx \mathbf{1.9\times}$ overall speedup
+\end{alertblock}
+\end{columns}
+
+\vspace{0.3em}
+\textbf{Story:} V1 was fast but broken. V2 fixed timing but added cycles. V3 further improved timing. The prefetch recovered the cycles lost by pipelining.
+\end{frame}
+
+% ================================================================
 \section{Conclusion}
 % ================================================================
 

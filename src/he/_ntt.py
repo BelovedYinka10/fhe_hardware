@@ -77,6 +77,8 @@ class _NTT_Engine:
             a[i] = (a[i] * self._n_inv) % self._q
         return a
 
+_SW_NTT_Engine = _NTT_Engine   # keep reference before possible HW override
+
 # ── Optional hardware backend ──────────────────────────────────
 # Set USE_HW_NTT = True after running  cd verilog/ && make
 # The HW_NTT_Engine has the same interface as _NTT_Engine.
