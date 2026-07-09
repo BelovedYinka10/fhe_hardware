@@ -1,72 +1,72 @@
 """
-_hash_verifier_hw.py  —  ctypes wrapper for the Verilator hash_verifier .so
+_hash_verifier_hw.py  —  ctypes wrapper for the Verilator rns_hash_verifier .so
 
-Drop-in hardware backend for HashVerifier.
-One HV_Engine is created per RNS prime; each engine runs the full
-Verilog simulation for that prime's coefficient ring.
+All N_PRIMES RNS prime lanes run in parallel inside a single Verilog
+simulation (rns_hash_verifier.v), replacing the old per-prime loop.
 
 Build with:
-    cd verilog/ && make hash_verifier
+    cd verilog/ && make rns_hash_verifier
 """
+from __future__ import annotations
 
 import ctypes
 import pathlib
 import sys as _sys
 
-from __future__ import annotations
 from he.he_parameter import HE_Parameter
 from he.ciphertext import Ciphertext
-from he.galois_ring.rns_poly import RNS_Poly
 from he.galois_ring.poly import Poly
 
-# ── Locate shared library ─────────────────────────────────────────
 _HERE     = pathlib.Path(__file__).resolve().parent          # proof/
-_LIB_PATH = _HERE.parents[1] / "src" / "hash_verifier_hw.so"
+_LIB_PATH = _HERE.parents[1] / "src" / "rns_hash_verifier_hw.so"
+
+_Q_WIDTH = 40   # must match Verilog compile-time Q_WIDTH
 
 
 def _load_lib() -> ctypes.CDLL:
     if not _LIB_PATH.exists():
         raise ImportError(
-            f"Hardware hash verifier library not found at {_LIB_PATH}.\n"
-            "Build it with:  cd verilog/ && make hash_verifier"
+            f"RNS hash verifier library not found at {_LIB_PATH}.\n"
+            "Build it with:  cd verilog/ && make rns_hash_verifier"
         )
-    lib = ctypes.CDLL(str(_LIB_PATH))
+    lib  = ctypes.CDLL(str(_LIB_PATH))
     U64P = ctypes.POINTER(ctypes.c_uint64)
 
-    # void* hv_new(uint64_t q, uint64_t n_inv,
-    #              uint64_t* fwd, uint64_t* inv, int n)
-    lib.hv_new.restype  = ctypes.c_void_p
-    lib.hv_new.argtypes = [
-        ctypes.c_uint64,   # q
-        ctypes.c_uint64,   # n_inv
-        ctypes.c_uint64,   # barrett_m = floor(2^(2*Q_WIDTH) / q)
-        U64P, U64P,        # fwd, inv twiddle tables
-        ctypes.c_int,      # n
+    # void* rns_hv_new(int n_primes,
+    #                  const uint64_t* qs, n_invs, barrett_ms,
+    #                  const uint64_t* fwd_tables, inv_tables,
+    #                  int n)
+    lib.rns_hv_new.restype  = ctypes.c_void_p
+    lib.rns_hv_new.argtypes = [
+        ctypes.c_int,
+        U64P, U64P, U64P,
+        U64P, U64P,
+        ctypes.c_int,
     ]
 
-    # void hv_free(void*)
-    lib.hv_free.restype  = None
-    lib.hv_free.argtypes = [ctypes.c_void_p]
+    # void rns_hv_free(void*)
+    lib.rns_hv_free.restype  = None
+    lib.rns_hv_free.argtypes = [ctypes.c_void_p]
 
-    # void hv_load_ct(void*, int ct_id, int comp_id,
-    #                 uint64_t* coeffs, int n)
-    # ct_id  : 0=c1, 1=c2, 2=c3
-    # comp_id: ciphertext component index
-    lib.hv_load_ct.restype  = None
-    lib.hv_load_ct.argtypes = [
+    # void rns_hv_load_ct(void*, int lane, int ct_id, int comp_id,
+    #                      const uint64_t* coeffs, int n)
+    lib.rns_hv_load_ct.restype  = None
+    lib.rns_hv_load_ct.argtypes = [
         ctypes.c_void_p,
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int, ctypes.c_int,
         U64P, ctypes.c_int,
     ]
 
-    # void hv_load_r(void*, uint64_t* coeffs, int n)
-    lib.hv_load_r.restype  = None
-    lib.hv_load_r.argtypes = [ctypes.c_void_p, U64P, ctypes.c_int]
+    # void rns_hv_load_r(void*, int lane, const uint64_t* coeffs, int n)
+    lib.rns_hv_load_r.restype  = None
+    lib.rns_hv_load_r.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_int, U64P, ctypes.c_int,
+    ]
 
-    # int hv_run(void*, int c1_count, int c2_count, int c3_count)
-    # Returns 1 if valid, 0 if not.
-    lib.hv_run.restype  = ctypes.c_int
-    lib.hv_run.argtypes = [
+    # int rns_hv_run(void*, int c1_count, int c2_count, int c3_count)
+    lib.rns_hv_run.restype  = ctypes.c_int
+    lib.rns_hv_run.argtypes = [
         ctypes.c_void_p,
         ctypes.c_int, ctypes.c_int, ctypes.c_int,
     ]
@@ -74,12 +74,10 @@ def _load_lib() -> ctypes.CDLL:
     return lib
 
 
-# ── Hardware backend ──────────────────────────────────────────────
-
 class HW_HashVerifier:
     """
-    Runs hash verification on the Verilator-simulated Verilog module.
-    One simulation engine per RNS prime.
+    Hardware hash verifier backed by rns_hash_verifier.v (Verilator).
+    One engine — all RNS prime lanes run in parallel.
     """
 
     _lib: "ctypes.CDLL | None" = None
@@ -91,112 +89,92 @@ class HW_HashVerifier:
         return cls._lib
 
     def __init__(self, parms: HE_Parameter):
-        self._parms   = parms
-        self._handles: dict[int, ctypes.c_void_p] = {}
+        self._parms  = parms
+        self._handle = None
 
-        lib  = self._get_lib()
-        U64  = ctypes.c_uint64
+        lib    = self._get_lib()
+        primes = list(parms.coeff_modulus)
+        n      = parms.poly_modulus
+        np_    = len(primes)
+        U64    = ctypes.c_uint64
 
-        for prime in parms.coeff_modulus:
-            eng  = parms.ntt_engines[prime]
-            n    = parms.poly_modulus
-            U64A = U64 * n
+        # Per-lane moduli arrays
+        qs         = (U64 * np_)(*primes)
+        n_invs     = (U64 * np_)(*[int(parms.ntt_engines[p]._n_inv) for p in primes])
+        barrett_ms = (U64 * np_)(*[(1 << (2 * _Q_WIDTH)) // p for p in primes])
 
-            # Convert twiddle tables to unsigned [0, prime)
-            c_fwd = U64A(*[int(x) % prime for x in eng._tables])
-            c_inv = U64A(*[int(x) % prime for x in eng._inv_tables])
+        # Twiddle tables: layout fwd_flat[lane * n + i], inv_flat[lane * n + i]
+        fwd_flat: list[int] = []
+        inv_flat: list[int] = []
+        for p in primes:
+            eng = parms.ntt_engines[p]
+            fwd_flat.extend(int(x) % p for x in eng._tables)
+            inv_flat.extend(int(x) % p for x in eng._inv_tables)
 
-            # Barrett constant: M = floor(2^(2*Q_WIDTH) / prime)
-            # Q_WIDTH must match the Verilog compile-time parameter (40 in Makefile).
-            _Q_WIDTH = 40
-            barrett_m = (1 << (2 * _Q_WIDTH)) // prime
+        total = np_ * n
+        fwd_arr = (U64 * total)(*fwd_flat)
+        inv_arr = (U64 * total)(*inv_flat)
 
-            handle = lib.hv_new(
-                prime,
-                int(eng._n_inv),
-                barrett_m,
-                ctypes.cast(c_fwd, ctypes.POINTER(U64)),
-                ctypes.cast(c_inv, ctypes.POINTER(U64)),
-                n,
-            )
-            if not handle:
-                raise RuntimeError(f"hv_new returned NULL for prime={prime}")
-            self._handles[prime] = handle
+        handle = lib.rns_hv_new(
+            np_,
+            ctypes.cast(qs,         ctypes.POINTER(U64)),
+            ctypes.cast(n_invs,     ctypes.POINTER(U64)),
+            ctypes.cast(barrett_ms, ctypes.POINTER(U64)),
+            ctypes.cast(fwd_arr,    ctypes.POINTER(U64)),
+            ctypes.cast(inv_arr,    ctypes.POINTER(U64)),
+            n,
+        )
+        if not handle:
+            raise RuntimeError("rns_hv_new returned NULL — "
+                               "check N_PRIMES and N match compile-time values")
+        self._handle = handle
 
     def __del__(self):
-        # Skip cleanup during interpreter shutdown to avoid segfaults
         if not _sys or not _sys.meta_path:
             return
-        if hasattr(self, "_handles") and self._handles and self._lib is not None:
-            for h in self._handles.values():
-                if h:
-                    self._lib.hv_free(h)
+        if hasattr(self, "_handle") and self._handle and self._lib is not None:
+            self._lib.rns_hv_free(self._handle)
 
-    # ── Public ───────────────────────────────────────────────────
+    # ── Public API ────────────────────────────────────────────────
 
     def verify(self,
                c1: Ciphertext,
                c2: Ciphertext,
                c3: Ciphertext,
-               r:  RNS_Poly) -> bool:
+               r) -> bool:
         """
-        Run hardware hash verification for every RNS prime.
-        Returns True only if all primes agree (valid).
+        Return True if  c3 == c1 * c2 + c2  (verified via RNS hash).
+        All lanes run in parallel; returns True only if all lanes agree.
         """
-        lib = self._get_lib()
-        n   = self._parms.poly_modulus
-        U64 = ctypes.c_uint64
+        lib    = self._get_lib()
+        primes = list(self._parms.coeff_modulus)
+        n      = self._parms.poly_modulus
+        U64    = ctypes.c_uint64
 
-        for prime in self._parms.coeff_modulus:
-            handle = self._handles[prime]
-            U64A   = U64 * n
+        def _to_u64ptr(data, q):
+            padded = (list(data) + [0] * n)[:n]
+            arr = (U64 * n)(*[int(x) % q for x in padded])
+            return ctypes.cast(arr, ctypes.POINTER(U64)), arr
 
-            def _to_u64(data: list, q: int) -> ctypes.Array:
-                """Convert centered-representation list to unsigned uint64 array."""
-                padded = (data + [0] * n)[:n]
-                return U64A(*[int(x) % q for x in padded])
-
-            # Load c1 components
+        for lane, prime in enumerate(primes):
             for comp_i, rns_poly in enumerate(c1._data):
-                d = rns_poly._rns_poly[prime]._data
-                lib.hv_load_ct(
-                    handle, 0, comp_i,
-                    ctypes.cast(_to_u64(d, prime), ctypes.POINTER(U64)),
-                    n,
-                )
+                ptr, arr = _to_u64ptr(rns_poly._rns_poly[prime]._data, prime)
+                lib.rns_hv_load_ct(self._handle, lane, 0, comp_i, ptr, n)
 
-            # Load c2 components
             for comp_i, rns_poly in enumerate(c2._data):
-                d = rns_poly._rns_poly[prime]._data
-                lib.hv_load_ct(
-                    handle, 1, comp_i,
-                    ctypes.cast(_to_u64(d, prime), ctypes.POINTER(U64)),
-                    n,
-                )
+                ptr, arr = _to_u64ptr(rns_poly._rns_poly[prime]._data, prime)
+                lib.rns_hv_load_ct(self._handle, lane, 1, comp_i, ptr, n)
 
-            # Load c3 components
             for comp_i, rns_poly in enumerate(c3._data):
-                d = rns_poly._rns_poly[prime]._data
-                lib.hv_load_ct(
-                    handle, 2, comp_i,
-                    ctypes.cast(_to_u64(d, prime), ctypes.POINTER(U64)),
-                    n,
-                )
+                ptr, arr = _to_u64ptr(rns_poly._rns_poly[prime]._data, prime)
+                lib.rns_hv_load_ct(self._handle, lane, 2, comp_i, ptr, n)
 
-            # Load r (accepts both Poly and RNS_Poly)
             if isinstance(r, Poly):
                 r_data = r._data
             else:
                 r_data = r._rns_poly[prime]._data
-            lib.hv_load_r(
-                handle,
-                ctypes.cast(_to_u64(r_data, prime), ctypes.POINTER(U64)),
-                n,
-            )
+            ptr, arr = _to_u64ptr(r_data, prime)
+            lib.rns_hv_load_r(self._handle, lane, ptr, n)
 
-            # Run simulation for this prime
-            valid = lib.hv_run(handle, c1.size(), c2.size(), c3.size())
-            if not valid:
-                return False
-
-        return True
+        valid = lib.rns_hv_run(self._handle, c1.size(), c2.size(), c3.size())
+        return bool(valid)

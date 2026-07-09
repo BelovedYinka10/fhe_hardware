@@ -18,7 +18,7 @@ from proof.cipher_hash import HomHash_Manager
 USE_HW_VERIFIER = False
 
 
-class HasoshVerifier:
+class HashVerifier:
     """
     Verifies:  cipher_hash(c3) == cipher_hash(c1) * cipher_hash(c2)
                                                   + cipher_hash(c2)
