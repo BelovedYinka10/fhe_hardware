@@ -18,14 +18,14 @@
 //
 // Parameters
 //   LOGN     : log2(N)                         (default 13)
-//   Q_WIDTH  : prime modulus bit-width         (default 40)
+//   Q_WIDTH  : prime modulus bit-width         (default 60)
 //   CT_SIZE  : max ct components per ciphertext (default 3)
 //   N_PRIMES : number of RNS prime lanes       (default 3)
 //   SEL_W    : ceil(log2(N_PRIMES)), min 1     (default 2)
 // ================================================================
 module rns_hash_verifier #(
     parameter LOGN     = 13,
-    parameter Q_WIDTH  = 40,
+    parameter Q_WIDTH  = 60,
     parameter CT_SIZE  = 3,
     parameter N_PRIMES = 3,
     parameter SEL_W    = 2      // ceil(log2(N_PRIMES))

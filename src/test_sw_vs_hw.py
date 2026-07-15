@@ -65,7 +65,7 @@ def main():
     # Build HE context
     parms = (HE_Parameter("bv")
              .set_poly_modulus(13)
-             .set_coeff_modulus([30, 30, 40])
+             .set_coeff_modulus([60, 60])
              .set_plain_modulus(18)
              .set_bound(1, 2))
     parms.generate_context()

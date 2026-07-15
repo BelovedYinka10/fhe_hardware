@@ -23,7 +23,7 @@ import sys as _sys
 
 # ── Locate shared library ──────────────────────────────────────
 _HERE   = pathlib.Path(__file__).resolve().parent           # _util/
-_LIB_PATH = _HERE.parent / "ntt_hw.so"                      # src/ntt_hw.so
+_LIB_PATH = _HERE.parents[1] / "src" / "ntt_hw.so"                      # ../src/ntt_hw.so
 
 
 def _load_lib() -> ctypes.CDLL:

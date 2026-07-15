@@ -87,10 +87,11 @@ void* ntt_engine_new(uint64_t q,
     // Set runtime ports that stay constant
     e->model->q     = q;
     e->model->n_inv = n_inv;
-    // barrett_m is [2*Q_WIDTH-1:0] = 80 bits → VlWide<3> in Verilator
+    // barrett_m is [2*Q_WIDTH-1:0] = 120 bits → VlWide<4> in Verilator
     e->model->barrett_m[0] = (uint32_t)(barrett_m);
     e->model->barrett_m[1] = (uint32_t)(barrett_m >> 32);
     e->model->barrett_m[2] = 0;
+    e->model->barrett_m[3] = 0;
 
     do_reset(e);
 

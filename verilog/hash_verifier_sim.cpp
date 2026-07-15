@@ -142,10 +142,11 @@ void* hv_new(uint64_t q, uint64_t n_inv,
     // Wire constant ports
     eng->dut->q     = q;
     eng->dut->n_inv = n_inv;
-    // barrett_m is [2*Q_WIDTH-1:0] = 80 bits → VlWide<3> in Verilator
+    // barrett_m is [2*Q_WIDTH-1:0] = 120 bits → VlWide<4> in Verilator
     eng->dut->barrett_m[0] = (uint32_t)(barrett_m);
     eng->dut->barrett_m[1] = (uint32_t)(barrett_m >> 32);
     eng->dut->barrett_m[2] = 0;
+    eng->dut->barrett_m[3] = 0;
 
     eng->reset();
     eng->load_twiddles();

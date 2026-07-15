@@ -36,14 +36,14 @@
 //
 // Parameters
 //   LOGN     : log2(N)                         (default 13)
-//   Q_WIDTH  : prime modulus bit-width         (default 40)
+//   Q_WIDTH  : prime modulus bit-width         (default 60)
 //   N_PRIMES : number of RNS prime lanes       (default 2)
 //   SEL_W    : ceil(log2(N_PRIMES)), minimum 1 (default 1)
 //              Must be set to ceil(log2(N_PRIMES)) when overriding N_PRIMES.
 // ================================================================
 module rns_ntt #(
     parameter LOGN     = 13,
-    parameter Q_WIDTH  = 40,
+    parameter Q_WIDTH  = 60,
     parameter N_PRIMES = 2,
     parameter SEL_W    = 1      // ceil(log2(N_PRIMES)), min 1
 )(

@@ -9,12 +9,12 @@ Run from src/:
 """
 
 import time
-from he.galois_ring._util._ntt    import _NTT_Engine   # software
-from he.galois_ring._util._ntt_hw import HW_NTT_Engine  # hardware (Verilog)
+from he._ntt import _SW_NTT_Engine as _NTT_Engine   # software
+from _util._ntt_hw import HW_NTT_Engine              # hardware (Verilog)
 
 # ── Parameters ────────────────────────────────────────────────
-N_CORRECT  = 8       # degree used for correctness check (small, readable)
-Q          = 12289   # NTT-friendly prime
+N_CORRECT  = 8                    # degree used for correctness check (small, readable)
+Q          = 576460752303439873   # 60-bit NTT-friendly prime (≡ 1 mod 2N for N up to 2^29)
 
 N_SPEED    = 8       # degree used for speed test
 REPEATS    = 5       # number of timed repetitions per backend

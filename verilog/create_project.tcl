@@ -1,0 +1,186 @@
+# ================================================================
+# create_project.tcl  —  Vivado project setup (synthesis + sim)
+#
+# Creates a complete Vivado project for the CPET HE accelerator:
+#   • All RTL design sources
+#   • Testbench simulation sources
+#   • Synthesis + implementation runs configured
+#   • Pre-sim hook so $readmemh finds .hex test vectors
+#
+# Usage
+# ─────
+# Batch (creates project, then opens Vivado GUI):
+#   cd verilog/
+#   vivado -mode gui -source create_project.tcl
+#
+# Batch (no GUI — just create project files):
+#   vivado -mode batch -source create_project.tcl
+#
+# After creation, open the project:
+#   vivado vivado_project/cpet_he.xpr
+#
+# To target a different FPGA, change PART below.
+# Common choices:
+#   xc7a100tcsg324-1   Artix-7  (default — low cost)
+#   xc7z020clg400-1    Zynq-7   (includes ARM PS)
+#   xcku5p-ffvb676-2-e KintexUP (high perf)
+# ================================================================
+
+set VDIR [file dirname [file normalize [info script]]]
+set PART  "xc7a100tcsg324-1"
+set PROJ  "cpet_he"
+
+# ── Create project ────────────────────────────────────────────────
+create_project $PROJ $VDIR/vivado_project -part $PART -force
+
+set_property target_language    Verilog [current_project]
+set_property simulator_language Verilog [current_project]
+set_property default_lib        xil_defaultlib [current_project]
+
+# ── RTL design sources ────────────────────────────────────────────
+# Hierarchy:
+#   rns_hash_verifier  (top for full RNS pipeline)
+#   └─ hash_verifier × 2 lanes
+#      └─ cipher_hash
+#         └─ poly_mul  (uses ntt internally)
+#            └─ ntt
+#         └─ poly_add
+#   rns_ntt            (standalone RNS NTT — 2 parallel NTT cores)
+#   └─ ntt × 2 lanes
+
+set RTL_SRCS [list \
+    $VDIR/ntt.v               \
+    $VDIR/poly_mul.v          \
+    $VDIR/poly_add.v          \
+    $VDIR/cipher_hash.v       \
+    $VDIR/hash_verifier.v     \
+    $VDIR/rns_ntt.v           \
+    $VDIR/rns_hash_verifier.v \
+]
+
+add_files -norecurse $RTL_SRCS
+update_compile_order -fileset sources_1
+
+# Set top-level for synthesis
+# (rns_hash_verifier wraps the full 2-lane pipeline)
+set_property top rns_hash_verifier [get_filesets sources_1]
+set_property top_lib xil_defaultlib [get_filesets sources_1]
+
+# ── Simulation sources ────────────────────────────────────────────
+set SIM_SRCS [list \
+    $VDIR/tb_rns_hash_verifier.v        \
+    $VDIR/tb_rns_ntt.v                  \
+    $VDIR/tb_cipher_hash.v              \
+    $VDIR/tb_hash_verifier.v            \
+    $VDIR/tb_hash_verifier_schoolbook.v \
+    $VDIR/tb_poly_mul_schoolbook.v      \
+]
+
+add_files -fileset sim_1 -norecurse $SIM_SRCS
+update_compile_order -fileset sim_1
+
+# Default simulation top: full RNS hash verifier
+set_property top     tb_rns_hash_verifier [get_filesets sim_1]
+set_property top_lib xil_defaultlib       [get_filesets sim_1]
+
+# Run until $finish (no arbitrary cutoff)
+set_property -name {xsim.simulate.runtime} -value {-all} [get_filesets sim_1]
+
+# Pre-sim hook: cd to verilog/ so $readmemh finds the .hex files
+set PRE_SIM $VDIR/pre_sim.tcl
+set fh [open $PRE_SIM w]
+puts $fh "cd {$VDIR}"
+close $fh
+set_property -name {xsim.simulate.tcl.pre} -value $PRE_SIM [get_filesets sim_1]
+
+# ── Synthesis settings ────────────────────────────────────────────
+set_property strategy            "Vivado Synthesis Defaults" [get_runs synth_1]
+set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt [get_runs synth_1]
+
+# Report utilisation and timing after synthesis
+set_property STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE Default [get_runs synth_1]
+
+# ── Implementation settings ───────────────────────────────────────
+set_property strategy            "Vivado Implementation Defaults" [get_runs impl_1]
+set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE Default [get_runs impl_1]
+
+# ── Constraints (timing / pin) ────────────────────────────────────
+# Create a stub XDC so the project is complete.
+# Edit cpet_he.xdc to add real pin assignments and clock constraints
+# once you know your target board.
+set XDC $VDIR/cpet_he.xdc
+if {![file exists $XDC]} {
+    set fh [open $XDC w]
+    puts $fh "# ================================================================"
+    puts $fh "# cpet_he.xdc  —  Timing and pin constraints"
+    puts $fh "# Edit for your target board."
+    puts $fh "# ================================================================"
+    puts $fh ""
+    puts $fh "# 100 MHz system clock"
+    puts $fh "# create_clock -period 10.000 -name clk \[get_ports clk\]"
+    puts $fh ""
+    puts $fh "# Example pin assignments (Artix-7 Nexys-A7):"
+    puts $fh "# set_property -dict {PACKAGE_PIN E3  IOSTANDARD LVCMOS33} \[get_ports clk\]"
+    puts $fh "# set_property -dict {PACKAGE_PIN C12 IOSTANDARD LVCMOS33} \[get_ports rst_n\]"
+    close $fh
+    puts "  Created stub constraints: cpet_he.xdc"
+}
+add_files -fileset constrs_1 -norecurse $XDC
+
+# ── Helper procs (available after sourcing in Vivado Tcl console) ──
+
+# Switch simulation testbench and launch
+proc sim_run { top } {
+    set_property top $top [get_filesets sim_1]
+    puts ">>> Launching simulation: $top"
+    launch_simulation
+    run all
+}
+
+# Run synthesis and report utilisation
+proc run_synth {} {
+    puts ">>> Running synthesis..."
+    launch_runs synth_1 -jobs 4
+    wait_on_run synth_1
+    open_run synth_1
+    report_utilization -file utilization_synth.rpt
+    report_timing_summary -file timing_synth.rpt
+    puts ">>> Synthesis done. Reports: utilization_synth.rpt  timing_synth.rpt"
+}
+
+# Run full implementation and generate bitstream
+proc run_impl {} {
+    puts ">>> Running implementation..."
+    launch_runs impl_1 -to_step write_bitstream -jobs 4
+    wait_on_run impl_1
+    open_run impl_1
+    report_utilization     -file utilization_impl.rpt
+    report_timing_summary  -file timing_impl.rpt
+    report_power           -file power_impl.rpt
+    puts ">>> Implementation done."
+    puts "    Reports: utilization_impl.rpt  timing_impl.rpt  power_impl.rpt"
+    puts "    Bitstream: vivado_project/cpet_he.runs/impl_1/rns_hash_verifier.bit"
+}
+
+# ── Summary ───────────────────────────────────────────────────────
+puts ""
+puts "================================================================"
+puts "  Project created: $VDIR/vivado_project/$PROJ.xpr"
+puts "  Target part:     $PART"
+puts "  Synthesis top:   rns_hash_verifier"
+puts "  Default sim top: tb_rns_hash_verifier"
+puts ""
+puts "  Available commands in Vivado Tcl console:"
+puts "    sim_run tb_rns_hash_verifier   — run RNS hash verifier sim"
+puts "    sim_run tb_rns_ntt             — run RNS NTT sim"
+puts "    sim_run tb_cipher_hash         — run cipher hash sim"
+puts "    sim_run tb_hash_verifier       — run hash verifier sim"
+puts "    run_synth                      — synthesise + report"
+puts "    run_impl                       — implement + bitstream"
+puts ""
+puts "  Before simulation, regenerate test vectors if needed:"
+puts "    cd src_2/"
+puts "    python ../verilog/gen_test_vectors.py"
+puts "    python ../verilog/gen_rns_ntt_vectors.py"
+puts "    python ../verilog/gen_rns_hv_vectors.py"
+puts "================================================================"

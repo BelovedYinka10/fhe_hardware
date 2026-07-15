@@ -15,7 +15,7 @@ module tb_cipher_hash;
 
     // ── Parameters ──────────────────────────────────────────────
     localparam LOGN    = 13;
-    localparam Q_WIDTH = 40;
+    localparam Q_WIDTH = 60;
     localparam CT_SIZE = 3;
     localparam integer N = 1 << LOGN;   // 8192
 
@@ -116,7 +116,7 @@ module tb_cipher_hash;
         ct_count      = tv_params[2][1:0];  // c1_count
         barrett_m_val = tv_params[5];
 
-        $display("  q          = %0d (0x%010h)", q, q);
+        $display("  q          = %0d (0x%015h)", q, q);
         $display("  n_inv      = %0d", n_inv);
         $display("  barrett_m  = %0d", barrett_m_val);
         $display("  ct_count   = %0d", ct_count);

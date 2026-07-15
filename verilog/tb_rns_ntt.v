@@ -14,15 +14,15 @@
 //   iverilog -o tb_rns_ntt tb_rns_ntt.v rns_ntt.v ntt.v && vvp tb_rns_ntt
 //
 // Parameters must match gen_rns_ntt_vectors.py arguments:
-//   LOGN=4, Q_WIDTH=40, N_PRIMES=2
+//   LOGN=4, Q_WIDTH=60, N_PRIMES=2
 // ================================================================
 module tb_rns_ntt;
 
     // ── Match compiled parameters ─────────────────────────────────
     parameter integer LOGN     = 4;
-    parameter integer Q_WIDTH  = 40;
-    parameter integer N_PRIMES = 3;
-    parameter integer SEL_W    = 2;
+    parameter integer Q_WIDTH  = 60;
+    parameter integer N_PRIMES = 2;
+    parameter integer SEL_W    = 1;
     parameter integer N        = 1 << LOGN;
 
     // ── Clock & reset ─────────────────────────────────────────────
@@ -83,32 +83,24 @@ module tb_rns_ntt;
     // params: [0]=q, [1]=n_inv, [2]=barrett_m  (stored at 2*Q_WIDTH bits)
     reg [2*Q_WIDTH-1:0] params0 [0:2];
     reg [2*Q_WIDTH-1:0] params1 [0:2];
-    reg [2*Q_WIDTH-1:0] params2 [0:2];
 
     reg [Q_WIDTH-1:0]   tw_fwd0 [0:N-1];
     reg [Q_WIDTH-1:0]   tw_inv0 [0:N-1];
     reg [Q_WIDTH-1:0]   tw_fwd1 [0:N-1];
     reg [Q_WIDTH-1:0]   tw_inv1 [0:N-1];
-    reg [Q_WIDTH-1:0]   tw_fwd2 [0:N-1];
-    reg [Q_WIDTH-1:0]   tw_inv2 [0:N-1];
 
     reg [Q_WIDTH-1:0]   input0   [0:N-1];
     reg [Q_WIDTH-1:0]   input1   [0:N-1];
-    reg [Q_WIDTH-1:0]   input2   [0:N-1];
     reg [Q_WIDTH-1:0]   ntt_exp0 [0:N-1];
     reg [Q_WIDTH-1:0]   ntt_exp1 [0:N-1];
-    reg [Q_WIDTH-1:0]   ntt_exp2 [0:N-1];
     reg [Q_WIDTH-1:0]   intt_exp0[0:N-1];
     reg [Q_WIDTH-1:0]   intt_exp1[0:N-1];
-    reg [Q_WIDTH-1:0]   intt_exp2[0:N-1];
 
     // Capture read-back
     reg [Q_WIDTH-1:0]   hw_ntt0  [0:N-1];
     reg [Q_WIDTH-1:0]   hw_ntt1  [0:N-1];
-    reg [Q_WIDTH-1:0]   hw_ntt2  [0:N-1];
     reg [Q_WIDTH-1:0]   hw_intt0 [0:N-1];
     reg [Q_WIDTH-1:0]   hw_intt1 [0:N-1];
-    reg [Q_WIDTH-1:0]   hw_intt2 [0:N-1];
 
     // ── Task: wait for done ───────────────────────────────────────
     integer guard_max;
@@ -150,22 +142,16 @@ module tb_rns_ntt;
         // ── Load test vectors ─────────────────────────────────────
         $readmemh("tv_rns_params_lane0.hex",       params0);
         $readmemh("tv_rns_params_lane1.hex",       params1);
-        $readmemh("tv_rns_params_lane2.hex",       params2);
         $readmemh("tv_rns_twiddles_fwd_lane0.hex", tw_fwd0);
         $readmemh("tv_rns_twiddles_inv_lane0.hex", tw_inv0);
         $readmemh("tv_rns_twiddles_fwd_lane1.hex", tw_fwd1);
         $readmemh("tv_rns_twiddles_inv_lane1.hex", tw_inv1);
-        $readmemh("tv_rns_twiddles_fwd_lane2.hex", tw_fwd2);
-        $readmemh("tv_rns_twiddles_inv_lane2.hex", tw_inv2);
         $readmemh("tv_rns_input_lane0.hex",        input0);
         $readmemh("tv_rns_input_lane1.hex",        input1);
-        $readmemh("tv_rns_input_lane2.hex",        input2);
         $readmemh("tv_rns_ntt_lane0.hex",          ntt_exp0);
         $readmemh("tv_rns_ntt_lane1.hex",          ntt_exp1);
-        $readmemh("tv_rns_ntt_lane2.hex",          ntt_exp2);
         $readmemh("tv_rns_intt_lane0.hex",         intt_exp0);
         $readmemh("tv_rns_intt_lane1.hex",         intt_exp1);
-        $readmemh("tv_rns_intt_lane2.hex",         intt_exp2);
 
         // ── Reset ─────────────────────────────────────────────────
         clk = 0; rst_n = 0;
@@ -179,13 +165,12 @@ module tb_rns_ntt;
         // n_inv_all:     same layout
         // barrett_m_all: lane1 bm at [159:80], lane0 bm at [79:0]
         // Pack: lane2 at MSB, lane0 at LSB
-        q_all        = {params2[0][Q_WIDTH-1:0],   params1[0][Q_WIDTH-1:0],   params0[0][Q_WIDTH-1:0]};
-        n_inv_all    = {params2[1][Q_WIDTH-1:0],   params1[1][Q_WIDTH-1:0],   params0[1][Q_WIDTH-1:0]};
-        barrett_m_all= {params2[2][2*Q_WIDTH-1:0], params1[2][2*Q_WIDTH-1:0], params0[2][2*Q_WIDTH-1:0]};
+        q_all        = {params1[0][Q_WIDTH-1:0],   params0[0][Q_WIDTH-1:0]};
+        n_inv_all    = {params1[1][Q_WIDTH-1:0],   params0[1][Q_WIDTH-1:0]};
+        barrett_m_all= {params1[2][2*Q_WIDTH-1:0], params0[2][2*Q_WIDTH-1:0]};
 
-        $display("Lane 0: q=%0d (30-bit)", params0[0][Q_WIDTH-1:0]);
-        $display("Lane 1: q=%0d (30-bit)", params1[0][Q_WIDTH-1:0]);
-        $display("Lane 2: q=%0d (40-bit)", params2[0][Q_WIDTH-1:0]);
+        $display("Lane 0: q=%0d (%0d-bit)", params0[0][Q_WIDTH-1:0], $clog2(params0[0][Q_WIDTH-1:0])+1);
+        $display("Lane 1: q=%0d (%0d-bit)", params1[0][Q_WIDTH-1:0], $clog2(params1[0][Q_WIDTH-1:0])+1);
 
         // ── Load twiddle tables ───────────────────────────────────
         // Lane 0
@@ -196,10 +181,6 @@ module tb_rns_ntt;
         tw_lane_sel = 1;
         for (i = 0; i < N; i = i + 1) begin tw_wr_addr=i;   tw_wr_data=tw_fwd1[i]; @(posedge clk); end
         for (i = 0; i < N; i = i + 1) begin tw_wr_addr=N+i; tw_wr_data=tw_inv1[i]; @(posedge clk); end
-        // Lane 2
-        tw_lane_sel = 2;
-        for (i = 0; i < N; i = i + 1) begin tw_wr_addr=i;   tw_wr_data=tw_fwd2[i]; @(posedge clk); end
-        for (i = 0; i < N; i = i + 1) begin tw_wr_addr=N+i; tw_wr_data=tw_inv2[i]; @(posedge clk); end
         tw_wr_en = 0;
         @(posedge clk);
 
@@ -208,12 +189,10 @@ module tb_rns_ntt;
         for (i=0; i<N; i=i+1) begin coeff_wr_addr=i; coeff_wr_data=input0[i]; @(posedge clk); end
         lane_sel=1;
         for (i=0; i<N; i=i+1) begin coeff_wr_addr=i; coeff_wr_data=input1[i]; @(posedge clk); end
-        lane_sel=2;
-        for (i=0; i<N; i=i+1) begin coeff_wr_addr=i; coeff_wr_data=input2[i]; @(posedge clk); end
         coeff_wr_en=0; @(posedge clk);
 
-        // ── Start NTT (all 3 lanes fire simultaneously) ───────────
-        $display("\n[NTT] Starting all 3 lanes...");
+        // ── Start NTT (both lanes fire simultaneously) ────────────
+        $display("\n[NTT] Starting both lanes...");
         inverse = 0; start = 1; @(posedge clk); start = 0;
         wait_done;
         $display("[NTT] Done. lane_done=%b", lane_done);
@@ -221,15 +200,13 @@ module tb_rns_ntt;
         // ── Read back NTT results per lane ────────────────────────
         rd_lane=0; for (i=0;i<N;i=i+1) begin rd_addr=i; @(posedge clk); hw_ntt0[i]=rd_data; end
         rd_lane=1; for (i=0;i<N;i=i+1) begin rd_addr=i; @(posedge clk); hw_ntt1[i]=rd_data; end
-        rd_lane=2; for (i=0;i<N;i=i+1) begin rd_addr=i; @(posedge clk); hw_ntt2[i]=rd_data; end
 
         // ── Compare NTT per lane ──────────────────────────────────
         fail_count = 0;
         compare(0, hw_ntt0, ntt_exp0, 0);
         compare(1, hw_ntt1, ntt_exp1, 0);
-        compare(2, hw_ntt2, ntt_exp2, 0);
         if (fail_count == 0)
-            $display("[NTT] PASS — all 3 lanes match expected");
+            $display("[NTT] PASS — both lanes match expected");
         else
             $display("[NTT] FAIL — %0d mismatches", fail_count);
 
@@ -238,12 +215,10 @@ module tb_rns_ntt;
         for (i=0;i<N;i=i+1) begin coeff_wr_addr=i; coeff_wr_data=hw_ntt0[i]; @(posedge clk); end
         lane_sel=1;
         for (i=0;i<N;i=i+1) begin coeff_wr_addr=i; coeff_wr_data=hw_ntt1[i]; @(posedge clk); end
-        lane_sel=2;
-        for (i=0;i<N;i=i+1) begin coeff_wr_addr=i; coeff_wr_data=hw_ntt2[i]; @(posedge clk); end
         coeff_wr_en=0; @(posedge clk);
 
-        // ── Start INTT (all 3 lanes simultaneously) ───────────────
-        $display("\n[INTT] Starting all 3 lanes...");
+        // ── Start INTT (both lanes simultaneously) ────────────────
+        $display("\n[INTT] Starting both lanes...");
         inverse = 1; start = 1; @(posedge clk); start = 0;
         wait_done;
         $display("[INTT] Done. lane_done=%b", lane_done);
@@ -251,15 +226,13 @@ module tb_rns_ntt;
         // ── Read back INTT results per lane ───────────────────────
         rd_lane=0; for (i=0;i<N;i=i+1) begin rd_addr=i; @(posedge clk); hw_intt0[i]=rd_data; end
         rd_lane=1; for (i=0;i<N;i=i+1) begin rd_addr=i; @(posedge clk); hw_intt1[i]=rd_data; end
-        rd_lane=2; for (i=0;i<N;i=i+1) begin rd_addr=i; @(posedge clk); hw_intt2[i]=rd_data; end
 
         // ── Compare INTT per lane ─────────────────────────────────
         fail_count = 0;
         compare(0, hw_intt0, intt_exp0, 1);
         compare(1, hw_intt1, intt_exp1, 1);
-        compare(2, hw_intt2, intt_exp2, 1);
         if (fail_count == 0)
-            $display("[INTT] PASS — all 3 lanes recovered original input");
+            $display("[INTT] PASS — both lanes recovered original input");
         else
             $display("[INTT] FAIL — %0d mismatches", fail_count);
 

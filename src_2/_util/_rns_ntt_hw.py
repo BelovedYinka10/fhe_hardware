@@ -23,7 +23,7 @@ import pathlib
 import sys as _sys
 
 _HERE     = pathlib.Path(__file__).resolve().parent     # src/_util/
-_LIB_PATH = _HERE.parent / "rns_ntt_hw.so"             # src/rns_ntt_hw.so
+_LIB_PATH = _HERE.parents[1] / "src" / "rns_ntt_hw.so"             # ../src/rns_ntt_hw.so
 
 
 def _load_lib() -> ctypes.CDLL:

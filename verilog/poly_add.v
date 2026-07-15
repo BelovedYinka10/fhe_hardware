@@ -12,11 +12,11 @@
 //
 // Parameters
 //   LOGN    : log2(N)   polynomial degree N = 2^LOGN  (default 13)
-//   Q_WIDTH : bit-width of prime modulus q             (default 40)
+//   Q_WIDTH : bit-width of prime modulus q             (default 60)
 // ================================================================
 module poly_add #(
     parameter LOGN    = 13,
-    parameter Q_WIDTH = 40
+    parameter Q_WIDTH = 60
 )(
     input  wire                clk,
     input  wire                rst_n,

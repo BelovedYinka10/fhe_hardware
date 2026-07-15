@@ -21,11 +21,11 @@
 //
 // Parameters
 //   LOGN    : log2(N)  (default 13)
-//   Q_WIDTH : modulus bit-width (default 40)
+//   Q_WIDTH : modulus bit-width (default 60)
 // ================================================================
 module poly_mul #(
     parameter LOGN    = 13,
-    parameter Q_WIDTH = 40
+    parameter Q_WIDTH = 60
 )(
     input  wire                clk,
     input  wire                rst_n,

@@ -31,15 +31,15 @@
 double sc_time_stamp() { return 0; }
 
 // ── Compiled-in constants (must match Makefile -G flags) ────────────
-static constexpr int COMPILED_N_PRIMES = 3;
+static constexpr int COMPILED_N_PRIMES = 2;
 static constexpr int LOGN    = 13;
 static constexpr int N       = 1 << LOGN;    // 8192
 static constexpr int CT_SIZE = 3;
-static constexpr int Q_W     = 40;
+static constexpr int Q_W     = 60;
 
-// 32-bit words for packed Verilog buses at N_PRIMES=3, Q_WIDTH=40
-//   q_all / n_inv_all : 3 × 40  = 120 bits → 4 words
-//   barrett_m_all     : 3 × 80  = 240 bits → 8 words
+// 32-bit words for packed Verilog buses at N_PRIMES=2, Q_WIDTH=60
+//   q_all / n_inv_all : 2 × 60  = 120 bits → 4 words
+//   barrett_m_all     : 2 × 120 = 240 bits → 8 words
 static constexpr int QN_WORDS = (COMPILED_N_PRIMES * Q_W     + 31) / 32; // 4
 static constexpr int BM_WORDS = (COMPILED_N_PRIMES * 2 * Q_W + 31) / 32; // 8
 

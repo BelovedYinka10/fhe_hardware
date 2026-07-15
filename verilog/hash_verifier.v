@@ -26,12 +26,12 @@
 //
 // Parameters
 //   LOGN    : log2(N)         (default 13)
-//   Q_WIDTH : modulus width   (default 40)
+//   Q_WIDTH : modulus width   (default 60)
 //   CT_SIZE : max ct components per ciphertext (default 3)
 // ================================================================
 module hash_verifier #(
     parameter LOGN    = 13,
-    parameter Q_WIDTH = 40,
+    parameter Q_WIDTH = 60,
     parameter CT_SIZE = 3
 )(
     input  wire                clk,

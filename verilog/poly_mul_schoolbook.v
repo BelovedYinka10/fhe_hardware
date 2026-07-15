@@ -15,7 +15,7 @@
 // ================================================================
 module poly_mul_schoolbook #(
     parameter LOGN    = 13,
-    parameter Q_WIDTH = 40
+    parameter Q_WIDTH = 60
 )(
     input  wire                  clk,
     input  wire                  rst_n,

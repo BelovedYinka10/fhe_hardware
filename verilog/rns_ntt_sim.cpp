@@ -1,7 +1,7 @@
 // ================================================================
 // rns_ntt_sim.cpp  —  Verilator C wrapper for the RNS NTT model
 //
-// Compiled for N_PRIMES=3, Q_WIDTH=40 (matches project [30,30,40] RNS base).
+// Compiled for N_PRIMES=2, Q_WIDTH=60 (matches project [40,60] RNS base).
 //
 // Exposes a plain C API so Python ctypes can call it:
 //
@@ -29,8 +29,8 @@
 double sc_time_stamp() { return 0; }
 
 // Compiled-in lane count — must match Makefile -GN_PRIMES
-static constexpr int COMPILED_N_PRIMES = 3;
-static constexpr int Q_W    = 40;
+static constexpr int COMPILED_N_PRIMES = 2;
+static constexpr int Q_W    = 60;
 // Number of 32-bit words needed for each packed bus
 static constexpr int QN_WORDS = (COMPILED_N_PRIMES * Q_W     + 31) / 32; // 4
 static constexpr int BM_WORDS = (COMPILED_N_PRIMES * 2 * Q_W + 31) / 32; // 8

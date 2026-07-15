@@ -16,16 +16,16 @@
 //   5. Run Behavioral Simulation — expect PASS and valid=1
 //
 // Parameters must match gen_rns_hv_vectors.py:
-//   LOGN=13, Q_WIDTH=40, CT_SIZE=3, N_PRIMES=3, SEL_W=2
+//   LOGN=13, Q_WIDTH=60, CT_SIZE=3, N_PRIMES=2, SEL_W=1
 // ================================================================
 module tb_rns_hash_verifier;
 
     // ── Compiled parameters ──────────────────────────────────────
     localparam integer LOGN     = 13;
-    localparam integer Q_WIDTH  = 40;
+    localparam integer Q_WIDTH  = 60;
     localparam integer CT_SIZE  = 3;
-    localparam integer N_PRIMES = 3;
-    localparam integer SEL_W    = 2;
+    localparam integer N_PRIMES = 2;
+    localparam integer SEL_W    = 1;
     localparam integer N        = 1 << LOGN;   // 8192
 
     // Each hash_verifier lane runs ~7 poly_muls in sequence.
@@ -103,45 +103,34 @@ module tb_rns_hash_verifier;
     //         [4]=c3_count, [5]=barrett_m  (all at 2*Q_WIDTH wide)
     reg [2*Q_WIDTH-1:0] params0 [0:5];
     reg [2*Q_WIDTH-1:0] params1 [0:5];
-    reg [2*Q_WIDTH-1:0] params2 [0:5];
 
     reg [Q_WIDTH-1:0] tw_fwd0 [0:N-1];
     reg [Q_WIDTH-1:0] tw_inv0 [0:N-1];
     reg [Q_WIDTH-1:0] tw_fwd1 [0:N-1];
     reg [Q_WIDTH-1:0] tw_inv1 [0:N-1];
-    reg [Q_WIDTH-1:0] tw_fwd2 [0:N-1];
-    reg [Q_WIDTH-1:0] tw_inv2 [0:N-1];
 
     reg [Q_WIDTH-1:0] r0 [0:N-1];
     reg [Q_WIDTH-1:0] r1 [0:N-1];
-    reg [Q_WIDTH-1:0] r2 [0:N-1];
 
-    // c1 (2 components × 3 lanes)
+    // c1 (2 components × 2 lanes)
     reg [Q_WIDTH-1:0] c1_0_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c1_1_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c1_0_L1 [0:N-1];
     reg [Q_WIDTH-1:0] c1_1_L1 [0:N-1];
-    reg [Q_WIDTH-1:0] c1_0_L2 [0:N-1];
-    reg [Q_WIDTH-1:0] c1_1_L2 [0:N-1];
 
-    // c2 (2 components × 3 lanes)
+    // c2 (2 components × 2 lanes)
     reg [Q_WIDTH-1:0] c2_0_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c2_1_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c2_0_L1 [0:N-1];
     reg [Q_WIDTH-1:0] c2_1_L1 [0:N-1];
-    reg [Q_WIDTH-1:0] c2_0_L2 [0:N-1];
-    reg [Q_WIDTH-1:0] c2_1_L2 [0:N-1];
 
-    // c3 (3 components × 3 lanes)
+    // c3 (3 components × 2 lanes)
     reg [Q_WIDTH-1:0] c3_0_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c3_1_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c3_2_L0 [0:N-1];
     reg [Q_WIDTH-1:0] c3_0_L1 [0:N-1];
     reg [Q_WIDTH-1:0] c3_1_L1 [0:N-1];
     reg [Q_WIDTH-1:0] c3_2_L1 [0:N-1];
-    reg [Q_WIDTH-1:0] c3_0_L2 [0:N-1];
-    reg [Q_WIDTH-1:0] c3_1_L2 [0:N-1];
-    reg [Q_WIDTH-1:0] c3_2_L2 [0:N-1];
 
     integer i;
     integer cycle_count;
@@ -156,37 +145,26 @@ module tb_rns_hash_verifier;
         // ── Load hex files ───────────────────────────────────────
         $readmemh("tv_rns_hv_params_lane0.hex",       params0);
         $readmemh("tv_rns_hv_params_lane1.hex",       params1);
-        $readmemh("tv_rns_hv_params_lane2.hex",       params2);
         $readmemh("tv_rns_hv_twiddles_fwd_lane0.hex", tw_fwd0);
         $readmemh("tv_rns_hv_twiddles_inv_lane0.hex", tw_inv0);
         $readmemh("tv_rns_hv_twiddles_fwd_lane1.hex", tw_fwd1);
         $readmemh("tv_rns_hv_twiddles_inv_lane1.hex", tw_inv1);
-        $readmemh("tv_rns_hv_twiddles_fwd_lane2.hex", tw_fwd2);
-        $readmemh("tv_rns_hv_twiddles_inv_lane2.hex", tw_inv2);
         $readmemh("tv_rns_hv_r_lane0.hex",            r0);
         $readmemh("tv_rns_hv_r_lane1.hex",            r1);
-        $readmemh("tv_rns_hv_r_lane2.hex",            r2);
         $readmemh("tv_rns_hv_c1_0_lane0.hex",         c1_0_L0);
         $readmemh("tv_rns_hv_c1_1_lane0.hex",         c1_1_L0);
         $readmemh("tv_rns_hv_c1_0_lane1.hex",         c1_0_L1);
         $readmemh("tv_rns_hv_c1_1_lane1.hex",         c1_1_L1);
-        $readmemh("tv_rns_hv_c1_0_lane2.hex",         c1_0_L2);
-        $readmemh("tv_rns_hv_c1_1_lane2.hex",         c1_1_L2);
         $readmemh("tv_rns_hv_c2_0_lane0.hex",         c2_0_L0);
         $readmemh("tv_rns_hv_c2_1_lane0.hex",         c2_1_L0);
         $readmemh("tv_rns_hv_c2_0_lane1.hex",         c2_0_L1);
         $readmemh("tv_rns_hv_c2_1_lane1.hex",         c2_1_L1);
-        $readmemh("tv_rns_hv_c2_0_lane2.hex",         c2_0_L2);
-        $readmemh("tv_rns_hv_c2_1_lane2.hex",         c2_1_L2);
         $readmemh("tv_rns_hv_c3_0_lane0.hex",         c3_0_L0);
         $readmemh("tv_rns_hv_c3_1_lane0.hex",         c3_1_L0);
         $readmemh("tv_rns_hv_c3_2_lane0.hex",         c3_2_L0);
         $readmemh("tv_rns_hv_c3_0_lane1.hex",         c3_0_L1);
         $readmemh("tv_rns_hv_c3_1_lane1.hex",         c3_1_L1);
         $readmemh("tv_rns_hv_c3_2_lane1.hex",         c3_2_L1);
-        $readmemh("tv_rns_hv_c3_0_lane2.hex",         c3_0_L2);
-        $readmemh("tv_rns_hv_c3_1_lane2.hex",         c3_1_L2);
-        $readmemh("tv_rns_hv_c3_2_lane2.hex",         c3_2_L2);
 
         // ── Reset ────────────────────────────────────────────────
         rst_n    = 0; start   = 0;
@@ -197,14 +175,11 @@ module tb_rns_hash_verifier;
 
         // ── Pack moduli buses ────────────────────────────────────
         // Lane i occupies bits [i*W +: W] (lane 0 at LSB)
-        q_all         = { params2[0][Q_WIDTH-1:0],
-                          params1[0][Q_WIDTH-1:0],
+        q_all         = { params1[0][Q_WIDTH-1:0],
                           params0[0][Q_WIDTH-1:0] };
-        n_inv_all     = { params2[1][Q_WIDTH-1:0],
-                          params1[1][Q_WIDTH-1:0],
+        n_inv_all     = { params1[1][Q_WIDTH-1:0],
                           params0[1][Q_WIDTH-1:0] };
-        barrett_m_all = { params2[5][2*Q_WIDTH-1:0],
-                          params1[5][2*Q_WIDTH-1:0],
+        barrett_m_all = { params1[5][2*Q_WIDTH-1:0],
                           params0[5][2*Q_WIDTH-1:0] };
 
         c1_count = params0[2][1:0];
@@ -215,8 +190,6 @@ module tb_rns_hash_verifier;
                  $clog2(params0[0][Q_WIDTH-1:0]));
         $display("  Lane 1: q=%0d (%0d-bit)", params1[0][Q_WIDTH-1:0],
                  $clog2(params1[0][Q_WIDTH-1:0]));
-        $display("  Lane 2: q=%0d (%0d-bit)", params2[0][Q_WIDTH-1:0],
-                 $clog2(params2[0][Q_WIDTH-1:0]));
         $display("  c1_count=%0d  c2_count=%0d  c3_count=%0d",
                  c1_count, c2_count, c3_count);
         $display("");
@@ -268,11 +241,6 @@ module tb_rns_hash_verifier;
         for (i = 0; i < N; i = i + 1) begin
             r_wr_addr = i[LOGN-1:0]; r_wr_data = r1[i]; @(posedge clk);
         end
-        $display("  [%0t] Loading r (lane 2)...", $time);
-        lane_sel = 2;
-        for (i = 0; i < N; i = i + 1) begin
-            r_wr_addr = i[LOGN-1:0]; r_wr_data = r2[i]; @(posedge clk);
-        end
         r_wr_en = 0;
         @(posedge clk);
 
@@ -293,14 +261,6 @@ module tb_rns_hash_verifier;
         ct_sel = 1;
         for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c1_1_L1[i]; @(posedge clk); end
 
-        // Lane 2 — c1
-        $display("  [%0t] Loading c1 (lane 2)...", $time);
-        lane_sel = 2;
-        ct_sel = 0;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c1_0_L2[i]; @(posedge clk); end
-        ct_sel = 1;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c1_1_L2[i]; @(posedge clk); end
-
         // Lane 0 — c2
         $display("  [%0t] Loading c2 (lane 0)...", $time);
         lane_sel = 0; ct_id = 1;
@@ -316,14 +276,6 @@ module tb_rns_hash_verifier;
         for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c2_0_L1[i]; @(posedge clk); end
         ct_sel = 1;
         for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c2_1_L1[i]; @(posedge clk); end
-
-        // Lane 2 — c2
-        $display("  [%0t] Loading c2 (lane 2)...", $time);
-        lane_sel = 2;
-        ct_sel = 0;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c2_0_L2[i]; @(posedge clk); end
-        ct_sel = 1;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c2_1_L2[i]; @(posedge clk); end
 
         // Lane 0 — c3
         $display("  [%0t] Loading c3 (lane 0)...", $time);
@@ -345,21 +297,12 @@ module tb_rns_hash_verifier;
         ct_sel = 2;
         for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c3_2_L1[i]; @(posedge clk); end
 
-        // Lane 2 — c3
-        $display("  [%0t] Loading c3 (lane 2)...", $time);
-        lane_sel = 2;
-        ct_sel = 0;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c3_0_L2[i]; @(posedge clk); end
-        ct_sel = 1;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c3_1_L2[i]; @(posedge clk); end
-        ct_sel = 2;
-        for (i=0;i<N;i=i+1) begin ct_wr_addr=i[LOGN-1:0]; ct_wr_data=c3_2_L2[i]; @(posedge clk); end
         ct_wr_en = 0;
         @(posedge clk);
 
-        // ── Start — all 3 lanes fire simultaneously ───────────────
+        // ── Start — both lanes fire simultaneously ────────────────
         $display("");
-        $display("  [%0t] Starting RNS hash verification (all 3 lanes)...", $time);
+        $display("  [%0t] Starting RNS hash verification (both lanes)...", $time);
         start = 1;
         @(posedge clk);
         start = 0;
@@ -384,7 +327,7 @@ module tb_rns_hash_verifier;
         $display("================================================================");
         if (valid) begin
             $display("  PASS — valid = 1");
-            $display("  All 3 RNS lanes confirmed:");
+            $display("  Both RNS lanes confirmed:");
             $display("    H(c3) == H(c1)*H(c2) + H(c2)  in every prime ring");
         end else begin
             $display("  FAIL — valid = 0");

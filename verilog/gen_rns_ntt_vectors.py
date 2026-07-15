@@ -26,8 +26,8 @@ from _util._modulus import _mod_inverse
 from he._ntt import _SW_NTT_Engine
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-Q_WIDTH    = 40   # must match Verilog compile-time Q_WIDTH
-N_PRIMES   = 3
+Q_WIDTH    = 60   # must match Verilog compile-time Q_WIDTH
+N_PRIMES   = 2
 
 
 def write_hex(filename, values, width_bits=Q_WIDTH):
@@ -44,8 +44,9 @@ def main():
     N    = 1 << logn
     print(f"LOGN={logn}  N={N}  N_PRIMES={N_PRIMES}  Q_WIDTH={Q_WIDTH}")
 
+
     # ── Generate NTT-friendly primes ──────────────────────────────
-    primes = _generate_rns_bases([30, 30, 40], N)
+    primes = _generate_rns_bases([60, 60], N)
     print(f"Primes: {primes}\n")
 
     # ── Random input polynomials (reproducible) ───────────────────

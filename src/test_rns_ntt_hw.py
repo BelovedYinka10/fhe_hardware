@@ -17,7 +17,7 @@ LOGN     = 4          # N = 16 — must match rns_ntt_hw.so compiled LOGN
 N        = 1 << LOGN
 N_PRIMES = 2
 
-primes = _generate_rns_bases([20, 20], N)   # two ~20-bit NTT primes
+primes = _generate_rns_bases([60, 60], N)   # two 60-bit NTT primes
 print(f"N={N}, primes={primes}")
 
 # ── Random test polynomials (one per prime lane) ───────────────

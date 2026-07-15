@@ -37,7 +37,7 @@ from proof.cipher_hash import HomHash_Manager
 from _util._modulus import _mod_inverse
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-Q_WIDTH    = 40   # must match Verilog compile-time Q_WIDTH
+Q_WIDTH    = 60   # must match Verilog compile-time Q_WIDTH
 
 
 def write_hex(filename, values, width_bits=Q_WIDTH):
@@ -63,7 +63,7 @@ def main():
     # ── HE setup (matches test_homo.py) ──────────────────────────
     parms = (HE_Parameter("bv")
              .set_poly_modulus(13)
-             .set_coeff_modulus([30, 30, 40])
+             .set_coeff_modulus([60, 60])
              .set_plain_modulus(18)
              .set_bound(1, 2))
     parms.generate_context()

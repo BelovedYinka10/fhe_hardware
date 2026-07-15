@@ -25,7 +25,7 @@ def to_unsigned(val, q):
     return val % q
 
 
-def write_hex_file(filename, values, q_width=40):
+def write_hex_file(filename, values, q_width=60):
     """Write list of integers as hex file (one value per line, zero-padded)."""
     hex_digits = (q_width + 3) // 4  # number of hex digits needed
     filepath = os.path.join(OUTPUT_DIR, filename)
@@ -53,7 +53,7 @@ def main():
     # Setup HE context (same as test_homo.py)
     parms = HE_Parameter("bv") \
         .set_poly_modulus(13) \
-        .set_coeff_modulus([30, 30, 40]) \
+        .set_coeff_modulus([60, 60]) \
         .set_plain_modulus(18) \
         .set_bound(1, 2)
     parms.generate_context()
@@ -71,8 +71,8 @@ def main():
     print(f"  n_inv = {n_inv}")
 
     # Barrett constant: M = floor(2^(2*Q_WIDTH) / q)
-    # Q_WIDTH=40 matches the Verilog compile-time parameter
-    Q_WIDTH = 40
+    # Q_WIDTH=60 matches the Verilog compile-time parameter
+    Q_WIDTH = 60
     barrett_m = (1 << (2 * Q_WIDTH)) // q
     print(f"  barrett_m = {barrett_m} ({barrett_m.bit_length()} bits)")
 

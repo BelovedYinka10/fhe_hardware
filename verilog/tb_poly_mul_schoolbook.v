@@ -13,9 +13,9 @@
 // ================================================================
 module tb_poly_mul_schoolbook;
     localparam LOGN    = 13;
-    localparam Q_WIDTH = 40;
+    localparam Q_WIDTH = 60;
     localparam integer N = 1 << LOGN;
-    localparam [Q_WIDTH-1:0] Q = 40'd883949569;
+    localparam [Q_WIDTH-1:0] Q = 60'd883949569;
 
     reg clk = 0;
     reg rst_n;

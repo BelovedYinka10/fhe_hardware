@@ -12,10 +12,10 @@
 # ================================================================
 
 LOGN     ?= 13
-Q_WIDTH  ?= 40
+Q_WIDTH  ?= 60
 CT_SIZE  ?= 3
-N_PRIMES ?= 3
-SEL_W    ?= 2    # ceil(log2(N_PRIMES)); update when changing N_PRIMES
+N_PRIMES ?= 2
+SEL_W    ?= 1    # ceil(log2(N_PRIMES)); update when changing N_PRIMES
 
 # ── NTT target ────────────────────────────────────────────────
 NTT_TOP  := ntt

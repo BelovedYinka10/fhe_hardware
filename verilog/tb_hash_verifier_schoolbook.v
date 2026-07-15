@@ -16,7 +16,7 @@ module tb_hash_verifier_schoolbook;
 
     // ── Parameters ──────────────────────────────────────────────
     localparam LOGN    = 13;
-    localparam Q_WIDTH = 40;
+    localparam Q_WIDTH = 60;
     localparam CT_SIZE = 3;
     localparam integer N = 1 << LOGN;   // 8192
 
@@ -156,7 +156,7 @@ module tb_hash_verifier_schoolbook;
         c3_count      = tv_params[4][1:0];
         barrett_m_val = tv_params[5];
 
-        $display("  q          = %0d (0x%010h)", q, q);
+        $display("  q          = %0d (0x%015h)", q, q);
         $display("  n_inv      = %0d", n_inv);
         $display("  barrett_m  = %0d", barrett_m_val);
         $display("  c1_count   = %0d", c1_count);
