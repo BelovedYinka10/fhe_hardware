@@ -80,7 +80,7 @@ module cipher_hash #(
     // variable).  linear address = comp*N + coeff
     localparam integer CT_DEPTH = CT_SIZE * N;
 
-    (* ram_style = "block" *)
+    (* ram_style = "ultra" *)
     reg [Q_WIDTH-1:0] ct [0:CT_DEPTH-1];
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_r  [0:N-1];   // r_pow (squared each iter)
     (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_h  [0:N-1];   // accumulator

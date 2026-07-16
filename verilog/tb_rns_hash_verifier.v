@@ -217,16 +217,6 @@ module tb_rns_hash_verifier;
             @(posedge clk);
         end
 
-        $display("  [%0t] Loading twiddles (lane 2)...", $time);
-        tw_lane_sel = 2;
-        for (i = 0; i < N; i = i + 1) begin
-            tw_wr_addr = i[LOGN:0]; tw_wr_data = tw_fwd2[i];
-            @(posedge clk);
-        end
-        for (i = 0; i < N; i = i + 1) begin
-            tw_wr_addr = N[LOGN:0] + i[LOGN:0]; tw_wr_data = tw_inv2[i];
-            @(posedge clk);
-        end
         tw_wr_en = 0;
         @(posedge clk);
 

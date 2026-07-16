@@ -47,7 +47,35 @@ make rns_hash_verifier  # RNS hash verifier    → ../src/rns_hash_verifier_hw.s
 make clean
 ```
 
-Prebuilt `.so` files are currently checked in under `src/`.
+Prebuilt `.so` files are currently checked in under `src/` (both trees load these). They are **macOS Mach-O** binaries — on Windows `ctypes.CDLL` raises `OSError: [WinError 193]`, which the `except ImportError` guards in `he/_ntt.py` and `proof/hash_verifier.py` do **not** catch, so the fallback to Python does not happen.
+
+### Running the RTL in Vivado (Windows)
+
+Independent of the Verilator flow — no `make`, no `.so`. Vivado 2023.2 lives at `C:\Xilinx\Vivado\2023.2\bin\vivado.bat` (not on PATH).
+
+```bash
+cd verilog/
+vivado -mode gui -source create_project.tcl     # project + synth/impl runs + helper procs
+vivado -mode batch -source run_sim.tcl          # sim only; -tclargs <tb> to pick a testbench
+```
+
+From the Vivado Tcl console (paths need forward slashes):
+
+```tcl
+source create_project.tcl
+sim_run tb_rns_hash_verifier    # also: tb_rns_ntt, tb_cipher_hash, tb_hash_verifier
+run_synth                       # synthesise + utilisation/timing reports
+```
+
+`tb_rns_hash_verifier` passes in ~5.3M cycles at `LOGN=13, Q_WIDTH=60, N_PRIMES=2` with a [60, 60] base.
+
+Vivado-specific traps:
+- **Vivado reads the RTL default parameters; Verilator reads the Makefile's `-G` overrides.** The two configs drift silently. The Design Sources tree elaborates a synthesis-top candidate with *defaults*, so the lane count shown there is not necessarily what the testbench simulates.
+- **`$readmemh` cannot see `verilog/*.hex`** — xsim runs in `<proj>.sim/sim_1/behav/xsim/` and resolves against that, not the Tcl working directory. Both scripts generate `pre_sim.tcl` and wire it to **`xsim.compile.tcl.pre`** to copy the vectors in. There is **no `xsim.simulate.tcl.pre` property** — and `set_property -name` accepts an unknown name as a user property *without error*, so a wrong name fails silently and every `$readmemh` loads X. `create_project.tcl` reads the property back and warns.
+- Both scripts `-force` into the same `vivado_project/` under different project names (`cpet_he` vs `cpet_he_sim`); whichever runs second wipes the first.
+- `create_project -force` fails with "directory in use" if a sim is loaded — run `close_sim -force` first.
+- `create_project.tcl` adds `tb_hash_verifier_schoolbook` / `tb_poly_mul_schoolbook` to `sim_1` but omits their DUTs from `RTL_SRCS`, so those two tops fail to elaborate. `run_sim.tcl` adds all ten RTL files and is fine.
+- Schoolbook poly-mul is ~268M cycles at N=8192 — run only for cycle-count comparison.
 
 ## Architecture
 
@@ -97,7 +125,7 @@ verilog/
   tb_*.v                    — testbenches
   Makefile                  — Verilator builds → ../src/*.so
 
-src_2/                      — pure-Python baseline fork of src/ (see below)
+src_2/                      — older fork of src/; NOT software-only (see below)
 ```
 
 ### Key Data Flow
@@ -120,14 +148,20 @@ src_2/                      — pure-Python baseline fork of src/ (see below)
 
 ### Hardware Backend Gotchas
 
-- **The NTT hardware backend is ON by default.** `src/he/_ntt.py` sets `USE_HW_NTT = True` and rebinds the name `_NTT_Engine` to `HW_NTT_Engine` at import time, so *everything* downstream silently uses Verilator. The `try/except ImportError` only falls back to Python when the `.so` is missing. The pure-Python class stays reachable as `_SW_NTT_Engine`. Set `USE_HW_NTT = False` to force software.
+- **The NTT hardware backend is ON by default, in *both* trees.** `he/_ntt.py` sets `USE_HW_NTT = True` and rebinds the name `_NTT_Engine` to `HW_NTT_Engine` at import time, so *everything* downstream silently uses Verilator. The pure-Python class stays reachable as `_SW_NTT_Engine`. Set `USE_HW_NTT = False` to force software.
+- **The fallback only catches a *missing* `.so`.** The guard is `except ImportError`, but `_load_lib()` raises `ImportError` only when the file is absent; a file that exists but is the wrong architecture makes `ctypes.CDLL` raise `OSError`, which is not caught. Worse, the failure is *deferred*: `import he._ntt` succeeds and even prints "[NTT] Using Verilog hardware backend", because `_load_lib()` is lazy — it runs from `_get_lib()` inside `HW_NTT_Engine.__init__`, so the crash surfaces later inside `parms.generate_context()`. Widening to `except (ImportError, OSError)` is what makes the software path usable on a machine without a matching `.so`.
 - **The hash verifier backend is OFF by default** (`USE_HW_VERIFIER = False` in `proof/hash_verifier.py`), or pass `HashVerifier(parms, use_hw=True)` per call.
-- **Verilog parameters must match the Python context.** The Makefile bakes in `LOGN` (13 → N=8192), `Q_WIDTH` (40), `CT_SIZE` (3), and `N_PRIMES` (3) at compile time. A `.so` built with one `LOGN` will not work with a different `set_poly_modulus`, and `SEL_W` must be updated by hand to `ceil(log2(N_PRIMES))` when `N_PRIMES` changes. Rebuild after changing parameters: `make clean && make LOGN=... hash_verifier`.
-- `test_ntt_hw_vs_sw.py` imports `he.galois_ring._util._ntt_hw`, a path that no longer exists (the module moved to `src/_util/`). It will fail until the import is fixed.
+- **Verilog parameters must match the Python context.** The current configuration is `LOGN=13` (N=8192), `Q_WIDTH=60`, `CT_SIZE=3`, `N_PRIMES=2`, `SEL_W=1`. The Makefile bakes these in at compile time via `-G` overrides. A `.so` built with one `LOGN` will not work with a different `set_poly_modulus`, and `SEL_W` must be updated by hand to `ceil(log2(N_PRIMES))` when `N_PRIMES` changes. Rebuild after changing parameters: `make clean && make LOGN=... hash_verifier`.
+- **`Q_WIDTH` is duplicated in five places that must agree**, or Python's Barrett constant will not match the Verilog's shift: `verilog/Makefile`, `_util/_ntt_hw.py`, `_util/_rns_ntt_hw.py`, `verilog/rns_ntt_sim.cpp`, `verilog/rns_hash_verifier_sim.cpp` (plus `proof/_hash_verifier_hw.py`). Grep before trusting any one of them.
+- **Only 57–60 bit primes are safe on the ctypes path.** The Barrett constant `M = floor(2^(2*Q_WIDTH) / q)` grows as `q` *shrinks*. At `Q_WIDTH=60`, `M` exceeds 64 bits once `q < 2^56` — and `barrett_m` crosses the C ABI as a scalar `uint64_t`, which `ctypes` **silently truncates** (no exception). A 40-bit prime needs an 81-bit `M` and would make every `mod_mul` in that lane quietly wrong. The Verilog itself is fine (`barrett_m` is a `[2*Q_WIDTH-1:0]` bus); only the C ABI is too narrow. The Vivado path is unaffected — `gen_rns_hv_vectors.py` writes the full-width constant into the `.hex`.
 
 ### `src/` vs `src_2/`
 
-`src_2/` is a **pure-software baseline fork** of `src/` used for comparison. It drops the hardware wrappers (`_ntt_hw`, `_rns_ntt_hw`, `_hash_verifier_hw`, `hash_verifier.py`), drops `poly_config.py`, and keeps only `test.py` as an entry point. Its `Poly.__mul__` is the plain original — pointwise in NTT form, schoolbook otherwise, with no `PolyConfig` branching and no coefficient-form NTT path.
+`src_2/` is an older fork of `src/`. It is **not** a software-only baseline — it carries the same hardware wrappers (`_util/_ntt_hw.py`, `_util/_rns_ntt_hw.py`, `proof/hash_verifier.py`, `proof/_hash_verifier_hw.py`), and its `he/_ntt.py` also sets `USE_HW_NTT = True`. Its `_LIB_PATH` resolves to `<project_root>/src/*.so`, so **both trees load the same `.so` files** — switching trees does not switch backends.
+
+**To force software, set `USE_HW_NTT = False` or import `_SW_NTT_Engine` directly** (aliased in `he/_ntt.py` before the HW override rebinds `_NTT_Engine`). That name is the real software reference, and it is what the comparison harnesses use: `src_2/verify_hw.py`, `src/test_rns_ntt_hw.py`, `src/test_ntt_hw_vs_sw.py`, and `verilog/gen_rns_ntt_vectors.py` — which is why the generated `.hex` vectors are trustworthy as golden data.
+
+Real differences: `src_2/` has no `poly_config.py`; its `Poly.__mul__` is the plain original (pointwise in NTT form, schoolbook otherwise, no `PolyConfig` branching, no coefficient-form NTT path); its `Poly.equal` compares `_data` directly. Entry points are `test.py`, `debug.py`, and `verify_hw.py`.
 
 Changes to the HE or proof layers usually need to be mirrored in both trees. When in doubt, `src/` is the active one.
 

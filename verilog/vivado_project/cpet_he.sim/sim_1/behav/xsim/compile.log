@@ -1,0 +1,23 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/cipher_hash.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module cipher_hash
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module hash_verifier
+WARNING: [VRFC 10-3380] identifier 'idx' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:231]
+WARNING: [VRFC 10-3380] identifier 'state' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:232]
+WARNING: [VRFC 10-3380] identifier 'idx' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:233]
+WARNING: [VRFC 10-3380] identifier 'state' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:235]
+WARNING: [VRFC 10-3380] identifier 'state' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:236]
+WARNING: [VRFC 10-3380] identifier 'state' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:237]
+WARNING: [VRFC 10-3380] identifier 'idx' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:238]
+WARNING: [VRFC 10-3380] identifier 'idx' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:239]
+WARNING: [VRFC 10-3380] identifier 'idx' is used before its declaration [C:/Users/80010113/Desktop/project/fhe_hardware/verilog/hash_verifier.v:240]
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/ntt.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module ntt
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/poly_add.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module poly_add
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/poly_mul.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module poly_mul
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/rns_hash_verifier.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module rns_hash_verifier
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/80010113/Desktop/project/fhe_hardware/verilog/tb_rns_hash_verifier.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_rns_hash_verifier

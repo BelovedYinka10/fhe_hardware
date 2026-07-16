@@ -1,0 +1,15 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  \
+"../../../../../cipher_hash.v" \
+"../../../../../hash_verifier.v" \
+"../../../../../ntt.v" \
+"../../../../../poly_add.v" \
+"../../../../../poly_mul.v" \
+"../../../../../rns_hash_verifier.v" \
+"../../../../../tb_rns_hash_verifier.v" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

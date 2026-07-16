@@ -699,7 +699,7 @@ class Demo:
 
         for poly_mod_bit, coeff_mod_bit, plain_mod_bit, func_degree in test_parameter:
             param = HE_Parameter("bv") \
-                    .set_poly_modulus(poly_mod_bit) \
+                    .set_poly_modulus(poly_mod_bit) \claude
                     .set_coeff_modulus(coeff_mod_bit) \
                     .set_plain_modulus(plain_mod_bit) \
                     .set_bound(1, 0)

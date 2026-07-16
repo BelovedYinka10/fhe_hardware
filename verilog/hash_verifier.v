@@ -82,7 +82,7 @@ module hash_verifier #(
     //   linear address = (ct_id*CT_SIZE + comp)*N + coeff
     localparam integer CT_MEM_DEPTH = 3 * CT_SIZE * N;
 
-    (* ram_style = "block" *)
+    (* ram_style = "ultra" *)
     reg [Q_WIDTH-1:0] ct_mem [0:CT_MEM_DEPTH-1];
 
     function integer ct_lin;

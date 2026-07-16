@@ -1,0 +1,19 @@
+#-----------------------------------------------------------
+# Vivado v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:14:34 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Wed Jul 15 16:42:41 2026
+# Process ID: 41280
+# Current directory: C:/Users/80010113/Desktop/project/fhe_hardware/verilog/vivado_project/cpet_he.sim/sim_1/behav/xsim
+# Command line: vivado.exe -mode batch -notrace -nojournal -log vivado_wc_pre.log -source vivado_wc_pre.tcl
+# Log file: C:/Users/80010113/Desktop/project/fhe_hardware/verilog/vivado_project/cpet_he.sim/sim_1/behav/xsim/vivado_wc_pre.log
+# Journal file: 
+# Running On: ASC-ACA3850, OS: Windows, CPU Frequency: 3072 MHz, CPU Physical cores: 16, Host memory: 68111 MB
+#-----------------------------------------------------------
+source vivado_wc_pre.tcl -notrace
+INFO: [filemgmt 56-3] Default IP Output Path : Could not find the directory 'C:/Users/80010113/Desktop/project/fhe_hardware/verilog/vivado_project/cpet_he.gen/sources_1'.
+Scanning sources...
+Finished scanning sources
+open_project: Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 484.789 ; gain = 180.008
+INFO: [Common 17-206] Exiting Vivado at Wed Jul 15 16:42:51 2026...
