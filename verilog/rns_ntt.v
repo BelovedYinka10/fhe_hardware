@@ -12,7 +12,7 @@
 // Port layout — packed arrays, lane i at bit offset i*W:
 //   q_all         [N_PRIMES * Q_WIDTH   - 1 : 0]  one q per lane
 //   n_inv_all     [N_PRIMES * Q_WIDTH   - 1 : 0]  N^{-1} mod q_i
-//   barrett_m_all [N_PRIMES * 2*Q_WIDTH - 1 : 0]  Barrett constants
+//   q_neg_inv_all [N_PRIMES * 64 - 1 : 0]  Montgomery constants (-q_i^{-1} mod 2^64)
 //
 // Coefficient I/O:
 //   lane_sel      selects which prime lane to write a coefficient to
@@ -53,7 +53,7 @@ module rns_ntt #(
     // ── Per-lane moduli (packed, lane i at bit i*W) ───────────────
     input  wire [N_PRIMES*Q_WIDTH-1:0]        q_all,
     input  wire [N_PRIMES*Q_WIDTH-1:0]        n_inv_all,
-    input  wire [N_PRIMES*2*Q_WIDTH-1:0]      barrett_m_all,
+    input  wire [N_PRIMES*64-1:0]           q_neg_inv_all, // -q_i^{-1} mod 2^64 per lane
 
     // ── Coefficient write port ────────────────────────────────────
     input  wire [SEL_W-1:0]                   lane_sel,
@@ -104,7 +104,7 @@ module rns_ntt #(
                 // extract this lane's slice from the packed arrays
                 .q             (q_all        [i * Q_WIDTH     +: Q_WIDTH    ]),
                 .n_inv         (n_inv_all    [i * Q_WIDTH     +: Q_WIDTH    ]),
-                .barrett_m     (barrett_m_all[i * 2*Q_WIDTH   +: 2*Q_WIDTH  ]),
+                .q_neg_inv     (q_neg_inv_all[i * 64 +: 64]),
 
                 // gate coefficient write on lane_sel
                 .coeff_wr_en   (coeff_wr_en & (lane_sel == i[SEL_W-1:0])),

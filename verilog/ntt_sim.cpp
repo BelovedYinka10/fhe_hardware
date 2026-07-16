@@ -3,7 +3,7 @@
 //
 // Exposes a plain C API (extern "C") so Python ctypes can call it:
 //
-//   void* ntt_engine_new(q, n_inv, barrett_m, fwd_table[N], inv_table[N])
+//   void* ntt_engine_new(q, n_inv_mont, q_neg_inv, fwd_table[N], inv_table[N])
 //   void  ntt_engine_free(void* eng)
 //   void  ntt_run(void* eng, uint64_t* coeffs, int N, int inverse)
 //
@@ -25,7 +25,7 @@ struct NttEngine {
     Vntt*             model;
     uint64_t          q;
     uint64_t          n_inv;
-    uint64_t          barrett_m;
+    uint64_t          q_neg_inv;
     int               logn;   // N = 1 << logn
 };
 
@@ -67,7 +67,7 @@ extern "C" {
 //   table_size : N
 void* ntt_engine_new(uint64_t q,
                      uint64_t n_inv,
-                     uint64_t barrett_m,
+                     uint64_t q_neg_inv,
                      const uint64_t* fwd_table,
                      const uint64_t* inv_table,
                      int table_size)
@@ -77,7 +77,7 @@ void* ntt_engine_new(uint64_t q,
     e->model     = new Vntt(e->ctx, "ntt");
     e->q         = q;
     e->n_inv     = n_inv;
-    e->barrett_m = barrett_m;
+    e->q_neg_inv = q_neg_inv;
 
     // compute logn
     e->logn = 0;
@@ -87,11 +87,11 @@ void* ntt_engine_new(uint64_t q,
     // Set runtime ports that stay constant
     e->model->q     = q;
     e->model->n_inv = n_inv;
-    // barrett_m is [2*Q_WIDTH-1:0] = 120 bits → VlWide<4> in Verilator
-    e->model->barrett_m[0] = (uint32_t)(barrett_m);
-    e->model->barrett_m[1] = (uint32_t)(barrett_m >> 32);
-    e->model->barrett_m[2] = 0;
-    e->model->barrett_m[3] = 0;
+    // q_neg_inv is [63:0] = 64 bits → plain uint64_t in Verilator
+    e->model->q_neg_inv = q_neg_inv;
+    
+    
+    
 
     do_reset(e);
 

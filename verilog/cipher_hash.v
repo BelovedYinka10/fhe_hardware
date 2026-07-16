@@ -42,7 +42,7 @@ module cipher_hash #(
     // ── Runtime modulus ─────────────────────────────────────────
     input  wire [Q_WIDTH-1:0]  q,
     input  wire [Q_WIDTH-1:0]  n_inv,
-    input  wire [2*Q_WIDTH-1:0] barrett_m,  // floor(2^(2·Q_WIDTH) / q)
+    input  wire [63:0]          q_neg_inv,  // -q^{-1} mod 2^64  (Montgomery)
 
     // ── Ciphertext component write port ──────────────────────────
     // ct_sel selects which component [0..CT_SIZE-1] to write
@@ -116,7 +116,7 @@ module cipher_hash #(
         .rst_n        (rst_n),
         .q            (q),
         .n_inv        (n_inv),
-        .barrett_m    (barrett_m),
+        .q_neg_inv    (q_neg_inv),
         .a_wr_en      (pm_a_wr_en),
         .a_wr_addr    (pm_a_wr_addr),
         .a_wr_data    (pm_a_wr_data),

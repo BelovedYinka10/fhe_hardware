@@ -40,7 +40,7 @@ def _load_lib() -> ctypes.CDLL:
     lib.ntt_engine_new.argtypes = [
         ctypes.c_uint64,   # q
         ctypes.c_uint64,   # n_inv
-        ctypes.c_uint64,   # barrett_m = floor(2^(2*Q_WIDTH) / q)
+        ctypes.c_uint64,   # q_neg_inv = -q^{-1} mod 2^64  (Montgomery constant)
         U64P,              # fwd_table[N]
         U64P,              # inv_table[N]
         ctypes.c_int,      # table_size = N
@@ -84,26 +84,31 @@ class HW_NTT_Engine:
         self._n = n
         self._q = q
 
-        # Precompute Barrett constant: M = floor(2^(2*Q_WIDTH) / q)
-        # Q_WIDTH must match the Verilog compile-time parameter (60 in Makefile).
-        # Using q.bit_length() would be wrong for primes smaller than Q_WIDTH.
-        _Q_WIDTH = 60
-        self._barrett_m = (1 << (2 * _Q_WIDTH)) // q
+        # Montgomery constants (R = 2^64):
+        #   q_neg_inv = -q^{-1} mod 2^64
+        #   R_mod_q   = 2^64 mod q  (used to convert values to Montgomery form)
+        R = 1 << 64
+        self._q_neg_inv = (-pow(q, -1, R)) % R
+        R_mod_q = R % q
 
-        # Build the same twiddle tables as the Python engine
+        # Build twiddle tables in Montgomery form: tw_mont = tw * R mod q
+        # and n_inv in Montgomery form: n_inv_mont = n_inv * R mod q
+        # Then MonPro(coeff, tw_mont) = coeff * tw mod q  (coeff stays normal form)
         g       = self._find_primitive_root(q)
         psi     = pow(g, (q - 1) // (2 * n), q)
         psi_inv = pow(psi, q - 2, q)
-        self._n_inv = pow(n, q - 2, q)
+        n_inv   = pow(n, q - 2, q)
+        self._n_inv      = n_inv
+        self._n_inv_mont = (n_inv * R_mod_q) % q
 
         fwd = [0] * n
         inv = [0] * n
         for i in range(n):
             rev_i  = self._bit_rev(i, n.bit_length() - 1)
-            fwd[i] = pow(psi,     rev_i, q)
-            inv[i] = pow(psi_inv, rev_i, q)
+            fwd[i] = (pow(psi,     rev_i, q) * R_mod_q) % q  # Montgomery form
+            inv[i] = (pow(psi_inv, rev_i, q) * R_mod_q) % q  # Montgomery form
 
-        # Expose tables so hash_verifier HW backend can reuse them
+        # Expose tables (Montgomery form) so hash_verifier HW backend can reuse them
         self._tables     = fwd
         self._inv_tables = inv
 
@@ -114,7 +119,7 @@ class HW_NTT_Engine:
 
         lib = self._get_lib()
         self._handle = lib.ntt_engine_new(
-            q, self._n_inv, self._barrett_m,
+            q, self._n_inv_mont, self._q_neg_inv,
             ctypes.cast(c_fwd, ctypes.POINTER(U64)),
             ctypes.cast(c_inv, ctypes.POINTER(U64)),
             n

@@ -55,10 +55,13 @@ def main():
     for lane, q in enumerate(primes):
         print(f"Lane {lane}  q={q}")
 
-        # Per-lane NTT parameters
-        eng       = _SW_NTT_Engine(N, q)
-        n_inv     = _mod_inverse(N, q)
-        barrett_m = (1 << (2 * Q_WIDTH)) // q
+        # Per-lane Montgomery constants
+        R          = 1 << 64
+        R_mod_q    = R % q
+        eng        = _SW_NTT_Engine(N, q)
+        n_inv      = _mod_inverse(N, q)
+        n_inv_mont = (n_inv * R_mod_q) % q
+        q_neg_inv  = (-pow(q, -1, R)) % R
 
         # Random input in [0, q)
         inp = [random.randint(0, q - 1) for _ in range(N)]
@@ -75,13 +78,16 @@ def main():
             assert inp[i] == intt_out[i] % q, \
                 f"Lane {lane} INTT round-trip failed at i={i}"
 
-        # Write hex files
+        # Write hex files — params: [q, n_inv_mont, q_neg_inv] at 120-bit width
         write_hex(f"tv_rns_params_lane{lane}.hex",
-                  [q, n_inv, barrett_m],
-                  width_bits=2*Q_WIDTH)   # barrett_m needs 2*Q_WIDTH bits
+                  [q, n_inv_mont, q_neg_inv],
+                  width_bits=120)
 
-        write_hex(f"tv_rns_twiddles_fwd_lane{lane}.hex", eng._tables)
-        write_hex(f"tv_rns_twiddles_inv_lane{lane}.hex", eng._inv_tables)
+        # Twiddles in Montgomery form (tw * R mod q)
+        fwd_mont = [(v * R_mod_q) % q for v in eng._tables]
+        inv_mont = [(v * R_mod_q) % q for v in eng._inv_tables]
+        write_hex(f"tv_rns_twiddles_fwd_lane{lane}.hex", fwd_mont)
+        write_hex(f"tv_rns_twiddles_inv_lane{lane}.hex", inv_mont)
         write_hex(f"tv_rns_input_lane{lane}.hex",  inp)
         write_hex(f"tv_rns_ntt_lane{lane}.hex",   ntt_out)
         write_hex(f"tv_rns_intt_lane{lane}.hex",  intt_out)

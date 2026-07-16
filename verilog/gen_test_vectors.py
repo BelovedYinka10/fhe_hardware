@@ -66,15 +66,15 @@ def main():
     print(f"\n  N = {n}")
     print(f"  Using prime q = {q} ({q.bit_length()} bits)")
 
-    # Compute n_inv = N^-1 mod q
-    n_inv = _mod_inverse(n, q)
-    print(f"  n_inv = {n_inv}")
-
-    # Barrett constant: M = floor(2^(2*Q_WIDTH) / q)
-    # Q_WIDTH=60 matches the Verilog compile-time parameter
-    Q_WIDTH = 60
-    barrett_m = (1 << (2 * Q_WIDTH)) // q
-    print(f"  barrett_m = {barrett_m} ({barrett_m.bit_length()} bits)")
+    # Montgomery constants (R = 2^64)
+    R         = 1 << 64
+    R_mod_q   = R % q
+    n_inv     = _mod_inverse(n, q)
+    n_inv_mont = (n_inv * R_mod_q) % q    # N^{-1}·R mod q  (loaded into hardware)
+    q_neg_inv  = (-pow(q, -1, R)) % R     # -q^{-1} mod 2^64
+    print(f"  n_inv      = {n_inv}")
+    print(f"  n_inv_mont = {n_inv_mont}")
+    print(f"  q_neg_inv  = {q_neg_inv} ({q_neg_inv.bit_length()} bits)")
 
     # Get NTT engine and twiddle tables
     ntt_engine = parms.ntt_engines[q]
@@ -139,9 +139,11 @@ def main():
     # ── Write test vector files ──────────────────────────────────
     print(f"\n  Writing test vectors to: {OUTPUT_DIR}/")
 
-    # Parameters (6 values: q, n_inv, c1_count, c2_count, c3_count, barrett_m)
-    # Use 2*Q_WIDTH bits for params to accommodate barrett_m (up to 2*Q_WIDTH bits)
-    write_hex_file("tv_params.hex", [q, n_inv, len(c1._data), len(c2._data), len(c3._data), barrett_m], q_width=2*Q_WIDTH)
+    # Parameters (6 values: q, n_inv_mont, c1_count, c2_count, c3_count, q_neg_inv)
+    # Stored at 120-bit width; testbench reads [Q_WIDTH-1:0] or [63:0] per slot
+    write_hex_file("tv_params.hex",
+                   [q, n_inv_mont, len(c1._data), len(c2._data), len(c3._data), q_neg_inv],
+                   q_width=120)
 
     # Twiddle tables (already unsigned)
     write_hex_file("tv_twiddles_fwd.hex", fwd_twiddles)

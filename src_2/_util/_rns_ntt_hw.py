@@ -5,7 +5,7 @@ All N_PRIMES lanes run in PARALLEL in hardware (one ntt core per prime).
 Latency = single-lane NTT regardless of number of primes.
 
 The C API (rns_ntt_hw.so):
-    void* rns_ntt_engine_new(n_primes, qs, n_invs, barrett_ms,
+    void* rns_ntt_engine_new(n_primes, qs, n_invs_mont, q_neg_invs,
                               fwd_tables, inv_tables, table_size)
     void  rns_ntt_engine_free(void* eng)
     void  rns_ntt_run(void* eng, uint64_t* coeffs, n_primes, N, inverse)
@@ -23,7 +23,7 @@ import pathlib
 import sys as _sys
 
 _HERE     = pathlib.Path(__file__).resolve().parent     # src/_util/
-_LIB_PATH = _HERE.parents[1] / "src" / "rns_ntt_hw.so"             # ../src/rns_ntt_hw.so
+_LIB_PATH = _HERE.parents[1] / "src" / "rns_ntt_hw.so"             # src/rns_ntt_hw.so
 
 
 def _load_lib() -> ctypes.CDLL:
@@ -41,7 +41,7 @@ def _load_lib() -> ctypes.CDLL:
         ctypes.c_int,   # n_primes
         U64P,           # qs[n_primes]
         U64P,           # n_invs[n_primes]
-        U64P,           # barrett_ms[n_primes]
+        U64P,           # q_neg_invs[n_primes]  (-q_i^{-1} mod 2^64)
         U64P,           # fwd_tables[n_primes * N]
         U64P,           # inv_tables[n_primes * N]
         ctypes.c_int,   # table_size = N
@@ -88,15 +88,15 @@ class HW_RNS_NTT_Engine:
         self._primes  = primes
         self._n_lanes = len(primes)
 
-        _Q_WIDTH = 60
-
-        # Per-lane Barrett constants and twiddle tables
-        n_invs      = []
-        barrett_ms  = []
-        fwd_tables  = []
-        inv_tables  = []
+        # Montgomery constants per lane (R = 2^64)
+        R = 1 << 64
+        n_invs_mont  = []
+        q_neg_invs   = []
+        fwd_tables   = []
+        inv_tables   = []
 
         for q in primes:
+            R_mod_q = R % q
             g       = self._find_primitive_root(q)
             psi     = pow(g, (q - 1) // (2 * n), q)
             psi_inv = pow(psi, q - 2, q)
@@ -106,31 +106,31 @@ class HW_RNS_NTT_Engine:
             inv = [0] * n
             for i in range(n):
                 rev_i  = self._bit_rev(i, n.bit_length() - 1)
-                fwd[i] = pow(psi,     rev_i, q)
-                inv[i] = pow(psi_inv, rev_i, q)
+                fwd[i] = (pow(psi,     rev_i, q) * R_mod_q) % q  # Montgomery form
+                inv[i] = (pow(psi_inv, rev_i, q) * R_mod_q) % q  # Montgomery form
 
-            n_invs.append(n_inv)
-            barrett_ms.append((1 << (2 * _Q_WIDTH)) // q)
+            n_invs_mont.append((n_inv * R_mod_q) % q)            # Montgomery form
+            q_neg_invs.append((-pow(q, -1, R)) % R)
             fwd_tables.extend(fwd)
             inv_tables.extend(inv)
 
         U64  = ctypes.c_uint64
         n_p  = self._n_lanes
 
-        c_qs        = (U64 * n_p)(*primes)
-        c_n_invs    = (U64 * n_p)(*n_invs)
-        c_barrett   = (U64 * n_p)(*barrett_ms)
-        c_fwd       = (U64 * (n_p * n))(*fwd_tables)
-        c_inv       = (U64 * (n_p * n))(*inv_tables)
+        c_qs          = (U64 * n_p)(*primes)
+        c_n_invs_mont = (U64 * n_p)(*n_invs_mont)
+        c_q_neg_invs  = (U64 * n_p)(*q_neg_invs)
+        c_fwd         = (U64 * (n_p * n))(*fwd_tables)
+        c_inv         = (U64 * (n_p * n))(*inv_tables)
 
         lib = self._get_lib()
         self._handle = lib.rns_ntt_engine_new(
             n_p,
-            ctypes.cast(c_qs,      ctypes.POINTER(U64)),
-            ctypes.cast(c_n_invs,  ctypes.POINTER(U64)),
-            ctypes.cast(c_barrett, ctypes.POINTER(U64)),
-            ctypes.cast(c_fwd,     ctypes.POINTER(U64)),
-            ctypes.cast(c_inv,     ctypes.POINTER(U64)),
+            ctypes.cast(c_qs,          ctypes.POINTER(U64)),
+            ctypes.cast(c_n_invs_mont, ctypes.POINTER(U64)),
+            ctypes.cast(c_q_neg_invs,  ctypes.POINTER(U64)),
+            ctypes.cast(c_fwd,         ctypes.POINTER(U64)),
+            ctypes.cast(c_inv,         ctypes.POINTER(U64)),
             n,
         )
         if not self._handle:

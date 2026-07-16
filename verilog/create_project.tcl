@@ -56,6 +56,9 @@ set RTL_SRCS [list \
     $VDIR/hash_verifier.v     \
     $VDIR/rns_ntt.v           \
     $VDIR/rns_hash_verifier.v \
+    $VDIR/poly_mul_schoolbook.v      \
+    $VDIR/cipher_hash_schoolbook.v   \
+    $VDIR/hash_verifier_schoolbook.v \
 ]
 
 add_files -norecurse $RTL_SRCS
@@ -68,12 +71,10 @@ set_property top_lib xil_defaultlib [get_filesets sources_1]
 
 # ── Simulation sources ────────────────────────────────────────────
 set SIM_SRCS [list \
-    $VDIR/tb_rns_hash_verifier.v        \
-    $VDIR/tb_rns_ntt.v                  \
-    $VDIR/tb_cipher_hash.v              \
-    $VDIR/tb_hash_verifier.v            \
-    $VDIR/tb_hash_verifier_schoolbook.v \
-    $VDIR/tb_poly_mul_schoolbook.v      \
+    $VDIR/tb_rns_hash_verifier.v \
+    $VDIR/tb_rns_ntt.v           \
+    $VDIR/tb_cipher_hash.v       \
+    $VDIR/tb_hash_verifier.v     \
 ]
 
 add_files -fileset sim_1 -norecurse $SIM_SRCS

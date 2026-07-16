@@ -40,7 +40,7 @@ module hash_verifier #(
     // ── Runtime modulus ─────────────────────────────────────────
     input  wire [Q_WIDTH-1:0]  q,
     input  wire [Q_WIDTH-1:0]  n_inv,
-    input  wire [2*Q_WIDTH-1:0] barrett_m,  // floor(2^(2·Q_WIDTH) / q)
+    input  wire [63:0]          q_neg_inv,  // -q^{-1} mod 2^64  (Montgomery)
 
     // ── Ciphertext write port ────────────────────────────────────
     // ct_id  : 0=c1, 1=c2, 2=c3
@@ -128,7 +128,7 @@ module hash_verifier #(
         .rst_n        (rst_n),
         .q            (q),
         .n_inv        (n_inv),
-        .barrett_m    (barrett_m),
+        .q_neg_inv    (q_neg_inv),
         .ct_sel       (ch_ct_sel),
         .ct_wr_en     (ch_ct_wr_en),
         .ct_wr_addr   (ch_ct_wr_addr),
@@ -166,7 +166,7 @@ module hash_verifier #(
         .rst_n        (rst_n),
         .q            (q),
         .n_inv        (n_inv),
-        .barrett_m    (barrett_m),
+        .q_neg_inv    (q_neg_inv),
         .a_wr_en      (pm_a_wr_en),
         .a_wr_addr    (pm_a_wr_addr),
         .a_wr_data    (pm_a_wr_data),

@@ -35,7 +35,7 @@ module tb_hash_verifier;
     // ── DUT signals ─────────────────────────────────────────────
     reg  [Q_WIDTH-1:0]  q;
     reg  [Q_WIDTH-1:0]  n_inv;
-    reg  [2*Q_WIDTH-1:0] barrett_m_val;
+    reg  [63:0] q_neg_inv_val;
     reg  [1:0]          ct_id;
     reg  [1:0]          ct_sel;
     reg                 ct_wr_en;
@@ -64,7 +64,7 @@ module tb_hash_verifier;
         .rst_n      (rst_n),
         .q          (q),
         .n_inv      (n_inv),
-        .barrett_m  (barrett_m_val),
+        .q_neg_inv  (q_neg_inv_val),
         .ct_id      (ct_id),
         .ct_sel     (ct_sel),
         .ct_wr_en   (ct_wr_en),
@@ -154,11 +154,11 @@ module tb_hash_verifier;
         c1_count      = tv_params[2][1:0];
         c2_count      = tv_params[3][1:0];
         c3_count      = tv_params[4][1:0];
-        barrett_m_val = tv_params[5];
+        q_neg_inv_val = tv_params[5][63:0];
 
         $display("  q          = %0d (0x%015h)", q, q);
         $display("  n_inv      = %0d", n_inv);
-        $display("  barrett_m  = %0d", barrett_m_val);
+        $display("  q_neg_inv = %0d", q_neg_inv_val);
         $display("  c1_count   = %0d", c1_count);
         $display("  c2_count   = %0d", c2_count);
         $display("  c3_count   = %0d", c3_count);

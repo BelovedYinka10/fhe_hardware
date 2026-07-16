@@ -33,7 +33,7 @@ module tb_cipher_hash;
     // ── DUT signals ─────────────────────────────────────────────
     reg  [Q_WIDTH-1:0]  q;
     reg  [Q_WIDTH-1:0]  n_inv;
-    reg  [2*Q_WIDTH-1:0] barrett_m_val;
+    reg  [63:0] q_neg_inv_val;
     reg  [1:0]          ct_sel;
     reg                 ct_wr_en;
     reg  [LOGN-1:0]     ct_wr_addr;
@@ -60,7 +60,7 @@ module tb_cipher_hash;
         .rst_n      (rst_n),
         .q          (q),
         .n_inv      (n_inv),
-        .barrett_m  (barrett_m_val),
+        .q_neg_inv  (q_neg_inv_val),
         .ct_sel     (ct_sel),
         .ct_wr_en   (ct_wr_en),
         .ct_wr_addr (ct_wr_addr),
@@ -114,11 +114,11 @@ module tb_cipher_hash;
         q             = tv_params[0][Q_WIDTH-1:0];
         n_inv         = tv_params[1][Q_WIDTH-1:0];
         ct_count      = tv_params[2][1:0];  // c1_count
-        barrett_m_val = tv_params[5];
+        q_neg_inv_val = tv_params[5][63:0];
 
         $display("  q          = %0d (0x%015h)", q, q);
         $display("  n_inv      = %0d", n_inv);
-        $display("  barrett_m  = %0d", barrett_m_val);
+        $display("  q_neg_inv = %0d", q_neg_inv_val);
         $display("  ct_count   = %0d", ct_count);
         $display("");
 

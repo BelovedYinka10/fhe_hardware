@@ -5,7 +5,7 @@
 // One engine replaces the old pattern of one hv_new() per prime.
 //
 // C API:
-//   void* rns_hv_new(n_primes, qs, n_invs, barrett_ms,
+//   void* rns_hv_new(n_primes, qs, n_invs, q_neg_invs,
 //                    fwd_tables, inv_tables, n)  → handle
 //   void  rns_hv_free(void*)
 //   void  rns_hv_load_ct(void*, int lane, int ct_id, int comp_id,
@@ -39,9 +39,9 @@ static constexpr int Q_W     = 60;
 
 // 32-bit words for packed Verilog buses at N_PRIMES=2, Q_WIDTH=60
 //   q_all / n_inv_all : 2 × 60  = 120 bits → 4 words
-//   barrett_m_all     : 2 × 120 = 240 bits → 8 words
+//   q_neg_inv_all     : 2 × 120 = 240 bits → 8 words
 static constexpr int QN_WORDS = (COMPILED_N_PRIMES * Q_W     + 31) / 32; // 4
-static constexpr int BM_WORDS = (COMPILED_N_PRIMES * 2 * Q_W + 31) / 32; // 8
+static constexpr int BM_WORDS = (COMPILED_N_PRIMES * 64 + 31) / 32; // 8
 
 static constexpr uint64_t MAX_CYCLES = 10'000'000ULL;
 
@@ -152,14 +152,14 @@ extern "C" {
 //   n_primes   : must equal COMPILED_N_PRIMES
 //   qs         : qs[n_primes]          — one prime per lane
 //   n_invs     : n_invs[n_primes]      — N^{-1} mod q_i per lane
-//   barrett_ms : barrett_ms[n_primes]  — floor(2^(2*Q_WIDTH)/q_i) per lane
+//   q_neg_invs : q_neg_invs[n_primes]  — floor(2^(64-1)/q_i) per lane
 //   fwd_tables : fwd_tables[n_primes * n] — forward twiddles (lane-major)
 //   inv_tables : inv_tables[n_primes * n] — inverse twiddles (lane-major)
 //   n          : polynomial degree (must equal compile-time N)
 void* rns_hv_new(int             n_primes,
                   const uint64_t* qs,
                   const uint64_t* n_invs,
-                  const uint64_t* barrett_ms,
+                  const uint64_t* q_neg_invs,
                   const uint64_t* fwd_tables,
                   const uint64_t* inv_tables,
                   int             n)
@@ -186,7 +186,7 @@ void* rns_hv_new(int             n_primes,
     // Pack moduli into Verilog packed buses
     vlwide_pack(eng->dut->q_all,         QN_WORDS, qs,         n_primes, Q_W);
     vlwide_pack(eng->dut->n_inv_all,     QN_WORDS, n_invs,     n_primes, Q_W);
-    vlwide_pack(eng->dut->barrett_m_all, BM_WORDS, barrett_ms, n_primes, 2 * Q_W);
+    vlwide_pack(eng->dut->q_neg_inv_all, BM_WORDS, q_neg_invs, n_primes, 2 * Q_W);
 
     eng->reset();
     eng->load_twiddles();

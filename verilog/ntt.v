@@ -8,7 +8,7 @@
 // Architecture: one butterfly per 2-clock micro-cycle (READ→WRITE)
 //
 // Modular multiply uses Barrett reduction (synthesizable).
-// barrett_m = floor(2^(2·Q_WIDTH) / q) must be precomputed and
+// q_neg_inv = -q^{-1} mod 2^64 must be precomputed and
 // supplied as a runtime input port.
 //
 // Memory architecture (BRAM-friendly):
@@ -39,8 +39,8 @@ module ntt #(
 
     // ── Runtime modulus ──────────────────────────────────────────
     input  wire [Q_WIDTH-1:0]    q,
-    input  wire [Q_WIDTH-1:0]    n_inv,    // N^{-1} mod q (INTT only)
-    input  wire [2*Q_WIDTH-1:0]  barrett_m, // floor(2^(2·Q_WIDTH) / q)
+    input  wire [Q_WIDTH-1:0]    n_inv,    // N^{-1} mod q · R  (Montgomery form, INTT only)
+    input  wire [63:0]           q_neg_inv, // -q^{-1} mod 2^64  (Montgomery constant)
 
     // ── Coefficient write port (load input polynomial) ───────────
     input  wire                  coeff_wr_en,
@@ -66,10 +66,9 @@ module ntt #(
 );
 
     // ── Constants ─────────────────────────────────────────────────
-    localparam integer N         = 1 << LOGN;
-    localparam integer K_MAX     = N/2 - 1;   // max butterfly index per stage
-    localparam integer S_MAX     = LOGN - 1;  // max stage index
-    localparam integer BARRETT_K = 2 * Q_WIDTH;   // shift amount for Barrett
+    localparam integer N     = 1 << LOGN;
+    localparam integer K_MAX = N/2 - 1;   // max butterfly index per stage
+    localparam integer S_MAX = LOGN - 1;  // max stage index
 
     // ── Memories ──────────────────────────────────────────────────
     (* ram_style = "block" *)
@@ -153,32 +152,36 @@ module ntt #(
         end
     endfunction
 
-    // mod_mul : (a * b) mod q  — Barrett reduction (synthesizable)
-    //   barrett_m [2·Q_WIDTH-1:0] is read from the module input port.
-    //   K  = 2·Q_WIDTH (shift amount)
-    //   M  = floor(2^K / q) (precomputed constant)
+    // mod_mul : Montgomery modular multiply — MonPro(a, b) = a·b·R⁻¹ mod q
+    //   R = 2^64 (fixed for all Q_WIDTH ≤ 64)
+    //   q_neg_inv = -q⁻¹ mod 2^64  (precomputed, supplied as port)
     //
-    //   p  [2·Q_WIDTH-1 : 0]  — product a·b           (< q^2 < 2^(2·Q_WIDTH))
-    //   pm [4·Q_WIDTH-1 : 0]  — p · M                 (< 2^(4·Q_WIDTH))
-    //   t  [2·Q_WIDTH-1 : 0]  — quotient est = pm>>K  (< q < 2^Q_WIDTH)
-    //   tq [2·Q_WIDTH-1 : 0]  — t · q
-    //   r  [2·Q_WIDTH-1 : 0]  — remainder ∈ [0, 2q), one correction
+    // Usage contract (three dedicated paths — see paper Sec. 3.2):
+    //   CT butterfly  : MonPro(v,  tw)      tw  stored as tw·R mod q
+    //   GS butterfly  : MonPro(Δ,  tw)      same twiddle convention
+    //   INTT scaling  : MonPro(c,  n_inv)   n_inv stored as N⁻¹·R mod q
+    //   → coefficients remain in normal form [0,q) throughout.
+    //
+    //   t   [127:0]  — a·b zero-extended to 128 bits
+    //   m   [ 63:0]  — (t mod 2^64)·q_neg_inv mod 2^64
+    //   mq  [127:0]  — m·q zero-extended
+    //   s   [128:0]  — t + mq  (≤ 2^125 < 2^129)
+    //   u   [Q:0]    — s >> 64  (< 2q, one correction needed)
     function [Q_WIDTH-1:0] mod_mul;
-        input [Q_WIDTH-1:0] a, b, qq;
-        reg [2*Q_WIDTH-1:0] p;
-        reg [4*Q_WIDTH-1:0] pm;
-        reg [Q_WIDTH:0]     t;
-        reg [2*Q_WIDTH-1:0] tq;
-        reg [2*Q_WIDTH-1:0] r;
+        input [Q_WIDTH-1:0] a, b;
+        reg [127:0]     t;
+        reg [63:0]      m;
+        reg [127:0]     mq;
+        reg [128:0]     s;
+        reg [Q_WIDTH:0] u;
         begin
-            p  = a * b;
-            pm = {{(2*Q_WIDTH){1'b0}}, p} * {{(2*Q_WIDTH){1'b0}}, barrett_m};
-            t  = pm[4*Q_WIDTH-1 : 2*Q_WIDTH];
-            tq = t * {1'b0, qq};
-            r  = p - tq;
-            if (r >= {{Q_WIDTH{1'b0}}, qq})
-                r = r - {{Q_WIDTH{1'b0}}, qq};
-            mod_mul = r[Q_WIDTH-1:0];
+            t  = {{(128-Q_WIDTH){1'b0}}, a} * {{(128-Q_WIDTH){1'b0}}, b};
+            m  = t[63:0] * q_neg_inv;            // lower 64-bit (Verilog truncates)
+            mq = {64'b0, m} * {{(128-Q_WIDTH){1'b0}}, q};
+            s  = {1'b0, t} + {1'b0, mq};
+            u  = s[128:64];
+            mod_mul = (u[Q_WIDTH:0] >= {1'b0, q}) ? u[Q_WIDTH-1:0] - q
+                                                   : u[Q_WIDTH-1:0];
         end
     endfunction
 
@@ -197,16 +200,20 @@ module ntt #(
     // Cooley–Tukey (NTT):     u' = u + v·w,   v' = u - v·w
     // Gentleman–Sande (INTT): u' = u + v,      v' = (u - v)·w
 
-    wire [Q_WIDTH-1:0] vw     = mod_mul(v_w, w_w, q);
+    // Three dedicated multiplier paths (paper Sec. 3.2):
+    //   CT_MM  — CT butterfly twiddle multiply (FNTT)
+    //   GS_MM  — GS butterfly twiddle multiply (INTT)
+    //   SCALE  — INTT final N⁻¹ scaling
+    wire [Q_WIDTH-1:0] vw     = mod_mul(v_w, w_w);       // CT_MM
     wire [Q_WIDTH-1:0] ct_u   = mod_add(u_w, vw,  q);
     wire [Q_WIDTH-1:0] ct_v   = mod_sub(u_w, vw,  q);
 
     wire [Q_WIDTH-1:0] gs_u   = mod_add(u_w, v_w, q);
     wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_w, v_w, q);
-    wire [Q_WIDTH-1:0] gs_v   = mod_mul(gs_dif, w_w, q);
+    wire [Q_WIDTH-1:0] gs_v   = mod_mul(gs_dif, w_w);    // GS_MM
 
-    // INTT final scale: coeff[sc_idx] (in cdo) * n_inv mod q
-    wire [Q_WIDTH-1:0] scaled = mod_mul(cdo, n_inv, q);
+    // INTT final scale: coeff[sc_idx] · N⁻¹·R mod q → coeff·N⁻¹ mod q
+    wire [Q_WIDTH-1:0] scaled = mod_mul(cdo, n_inv);      // SCALE
 
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).

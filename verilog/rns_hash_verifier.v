@@ -11,7 +11,7 @@
 // the single-prime module N_PRIMES times and gates writes by lane_sel.
 //
 // Port layout:
-//   q_all / n_inv_all / barrett_m_all  — packed, lane i at bit i*W
+//   q_all / n_inv_all / q_neg_inv_all  — packed, lane i at bit i*W
 //   lane_sel      — selects which prime lane receives CT / r writes
 //   tw_lane_sel   — selects which prime lane receives twiddle writes
 //   All other ports are identical to hash_verifier.v
@@ -36,7 +36,7 @@ module rns_hash_verifier #(
     // ── Per-lane moduli (packed, lane i at bit i*W) ───────────────
     input  wire [N_PRIMES*Q_WIDTH-1:0]        q_all,
     input  wire [N_PRIMES*Q_WIDTH-1:0]        n_inv_all,
-    input  wire [N_PRIMES*2*Q_WIDTH-1:0]      barrett_m_all,
+    input  wire [N_PRIMES*64-1:0]           q_neg_inv_all,
 
     // ── Lane select for CT and r writes ──────────────────────────
     input  wire [SEL_W-1:0]                   lane_sel,
@@ -94,7 +94,7 @@ module rns_hash_verifier #(
                 // Extract this lane's moduli slice from packed buses
                 .q         (q_all        [i * Q_WIDTH   +: Q_WIDTH  ]),
                 .n_inv     (n_inv_all    [i * Q_WIDTH   +: Q_WIDTH  ]),
-                .barrett_m (barrett_m_all[i * 2*Q_WIDTH +: 2*Q_WIDTH]),
+                .q_neg_inv (q_neg_inv_all[i * 64 +: 64]),
 
                 // Gate CT write on lane_sel == i
                 .ct_id      (ct_id),

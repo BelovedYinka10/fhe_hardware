@@ -43,7 +43,7 @@ struct HV_Engine {
 
     uint64_t q;
     uint64_t n_inv;
-    uint64_t barrett_m;
+    uint64_t q_neg_inv;
     uint64_t fwd[N];
     uint64_t inv_tw[N];
 
@@ -119,7 +119,7 @@ struct HV_Engine {
 extern "C" {
 
 void* hv_new(uint64_t q, uint64_t n_inv,
-             uint64_t barrett_m,
+             uint64_t q_neg_inv,
              uint64_t* fwd, uint64_t* inv,
              int n)
 {
@@ -131,7 +131,7 @@ void* hv_new(uint64_t q, uint64_t n_inv,
 
     eng->q         = q;
     eng->n_inv     = n_inv;
-    eng->barrett_m = barrett_m;
+    eng->q_neg_inv = q_neg_inv;
     std::memcpy(eng->fwd,   fwd, N * sizeof(uint64_t));
     std::memcpy(eng->inv_tw, inv, N * sizeof(uint64_t));
 
@@ -142,11 +142,11 @@ void* hv_new(uint64_t q, uint64_t n_inv,
     // Wire constant ports
     eng->dut->q     = q;
     eng->dut->n_inv = n_inv;
-    // barrett_m is [2*Q_WIDTH-1:0] = 120 bits → VlWide<4> in Verilator
-    eng->dut->barrett_m[0] = (uint32_t)(barrett_m);
-    eng->dut->barrett_m[1] = (uint32_t)(barrett_m >> 32);
-    eng->dut->barrett_m[2] = 0;
-    eng->dut->barrett_m[3] = 0;
+    // q_neg_inv is [63:0] = 64 bits → plain uint64_t in Verilator
+    eng->dut->q_neg_inv = q_neg_inv;
+    
+    
+    
 
     eng->reset();
     eng->load_twiddles();

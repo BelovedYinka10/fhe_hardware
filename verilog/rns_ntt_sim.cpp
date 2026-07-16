@@ -5,7 +5,7 @@
 //
 // Exposes a plain C API so Python ctypes can call it:
 //
-//   void* rns_ntt_engine_new(n_primes, qs, n_invs, barrett_ms,
+//   void* rns_ntt_engine_new(n_primes, qs, n_invs, q_neg_invs,
 //                             fwd_tables, inv_tables, table_size)
 //   void  rns_ntt_engine_free(void* eng)
 //   void  rns_ntt_run(void* eng, uint64_t* coeffs, n_primes, N, inverse)
@@ -15,7 +15,7 @@
 // Packed Verilog bus layout (little-endian, lane i at bit i*W):
 //   q_all         [N_PRIMES*Q_WIDTH-1:0]       = 120 bits → VlWide<4>
 //   n_inv_all     [N_PRIMES*Q_WIDTH-1:0]       = 120 bits → VlWide<4>
-//   barrett_m_all [N_PRIMES*2*Q_WIDTH-1:0]     = 240 bits → VlWide<8>
+//   q_neg_inv_all [N_PRIMES*64-1-1:0]     = 240 bits → VlWide<8>
 //
 // Build with:   make rns_ntt  (see Makefile)
 // ================================================================
@@ -33,7 +33,7 @@ static constexpr int COMPILED_N_PRIMES = 2;
 static constexpr int Q_W    = 60;
 // Number of 32-bit words needed for each packed bus
 static constexpr int QN_WORDS = (COMPILED_N_PRIMES * Q_W     + 31) / 32; // 4
-static constexpr int BM_WORDS = (COMPILED_N_PRIMES * 2 * Q_W + 31) / 32; // 8
+static constexpr int BM_WORDS = (COMPILED_N_PRIMES * 64 + 31) / 32; // 8
 
 // ── Per-engine context ─────────────────────────────────────────
 struct RnsNttEngine {
@@ -98,14 +98,14 @@ extern "C" {
 //   n_primes    : must equal COMPILED_N_PRIMES (2)
 //   qs          : qs[n_primes] — one prime per lane
 //   n_invs      : N^{-1} mod q_i per lane
-//   barrett_ms  : Barrett constants per lane (floor(2^(2*Q_WIDTH) / q_i))
+//   q_neg_invs  : Montgomery constants per lane (-q_i^{-1} mod 2^64)
 //   fwd_tables  : fwd_tables[n_primes * table_size] — forward twiddles
 //   inv_tables  : inv_tables[n_primes * table_size] — inverse twiddles
 //   table_size  : N (polynomial degree)
 void* rns_ntt_engine_new(int             n_primes,
                           const uint64_t* qs,
                           const uint64_t* n_invs,
-                          const uint64_t* barrett_ms,
+                          const uint64_t* q_neg_invs,
                           const uint64_t* fwd_tables,
                           const uint64_t* inv_tables,
                           int             table_size)
@@ -126,8 +126,8 @@ void* rns_ntt_engine_new(int             n_primes,
     vlwide_pack(e->model->q_all,         QN_WORDS, qs,         n_primes, Q_W);
     // n_inv_all     [N_PRIMES*Q_WIDTH-1:0]   = 120 bits → VlWide<4>
     vlwide_pack(e->model->n_inv_all,     QN_WORDS, n_invs,     n_primes, Q_W);
-    // barrett_m_all [N_PRIMES*2*Q_WIDTH-1:0] = 240 bits → VlWide<8>
-    vlwide_pack(e->model->barrett_m_all, BM_WORDS, barrett_ms, n_primes, 2*Q_W);
+    // q_neg_inv_all [N_PRIMES*64-1-1:0] = 240 bits → VlWide<8>
+    vlwide_pack(e->model->q_neg_inv_all, BM_WORDS, q_neg_invs, n_primes, 64);
 
     do_reset(e);
 

@@ -33,7 +33,7 @@ module tb_rns_ntt;
     // ── DUT ports ─────────────────────────────────────────────────
     reg  [N_PRIMES*Q_WIDTH-1:0]      q_all;
     reg  [N_PRIMES*Q_WIDTH-1:0]      n_inv_all;
-    reg  [N_PRIMES*2*Q_WIDTH-1:0]    barrett_m_all;
+    reg  [N_PRIMES*64-1:0]           q_neg_inv_all;
     reg  [SEL_W-1:0]                 lane_sel;
     reg                              coeff_wr_en;
     reg  [LOGN-1:0]                  coeff_wr_addr;
@@ -61,7 +61,7 @@ module tb_rns_ntt;
         .rst_n         (rst_n),
         .q_all         (q_all),
         .n_inv_all     (n_inv_all),
-        .barrett_m_all (barrett_m_all),
+        .q_neg_inv_all (q_neg_inv_all),
         .lane_sel      (lane_sel),
         .coeff_wr_en   (coeff_wr_en),
         .coeff_wr_addr (coeff_wr_addr),
@@ -80,7 +80,7 @@ module tb_rns_ntt;
     );
 
     // ── Test vector memories ──────────────────────────────────────
-    // params: [0]=q, [1]=n_inv, [2]=barrett_m  (stored at 2*Q_WIDTH bits)
+    // params: [0]=q, [1]=n_inv_mont, [2]=q_neg_inv  (stored at 2*Q_WIDTH bits)
     reg [2*Q_WIDTH-1:0] params0 [0:2];
     reg [2*Q_WIDTH-1:0] params1 [0:2];
 
@@ -163,11 +163,11 @@ module tb_rns_ntt;
         // ── Assemble packed moduli buses ──────────────────────────
         // q_all:         lane1 q at [79:40], lane0 q at [39:0]
         // n_inv_all:     same layout
-        // barrett_m_all: lane1 bm at [159:80], lane0 bm at [79:0]
-        // Pack: lane2 at MSB, lane0 at LSB
+        
+        
         q_all        = {params1[0][Q_WIDTH-1:0],   params0[0][Q_WIDTH-1:0]};
         n_inv_all    = {params1[1][Q_WIDTH-1:0],   params0[1][Q_WIDTH-1:0]};
-        barrett_m_all= {params1[2][2*Q_WIDTH-1:0], params0[2][2*Q_WIDTH-1:0]};
+        q_neg_inv_all= {params1[2][63:0], params0[2][63:0]};
 
         $display("Lane 0: q=%0d (%0d-bit)", params0[0][Q_WIDTH-1:0], $clog2(params0[0][Q_WIDTH-1:0])+1);
         $display("Lane 1: q=%0d (%0d-bit)", params1[0][Q_WIDTH-1:0], $clog2(params1[0][Q_WIDTH-1:0])+1);

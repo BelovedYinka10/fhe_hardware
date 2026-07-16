@@ -37,7 +37,7 @@ from proof.cipher_hash import HomHash_Manager
 from _util._modulus import _mod_inverse
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-Q_WIDTH    = 60   # must match Verilog compile-time Q_WIDTH
+Q_WIDTH    = 60   # prime bit width (for coefficient hex formatting)
 
 
 def write_hex(filename, values, width_bits=Q_WIDTH):
@@ -123,18 +123,23 @@ def main():
     for lane, q in enumerate(primes):
         print(f"  ── Lane {lane}  q={q} ({q.bit_length()} bits) ──────────")
 
-        eng       = parms.ntt_engines[q]
-        n_inv     = _mod_inverse(n, q)
-        barrett_m = (1 << (2 * Q_WIDTH)) // q
+        R          = 1 << 64
+        R_mod_q    = R % q
+        eng        = parms.ntt_engines[q]
+        n_inv      = _mod_inverse(n, q)
+        n_inv_mont = (n_inv * R_mod_q) % q
+        q_neg_inv  = (-pow(q, -1, R)) % R
 
-        # params: q, n_inv, c1_count, c2_count, c3_count, barrett_m
+        # params: q, n_inv_mont, c1_count, c2_count, c3_count, q_neg_inv  (120-bit slots)
         write_hex(f"tv_rns_hv_params_lane{lane}.hex",
-                  [q, n_inv, len(c1._data), len(c2._data), len(c3._data), barrett_m],
-                  width_bits=2 * Q_WIDTH)
+                  [q, n_inv_mont, len(c1._data), len(c2._data), len(c3._data), q_neg_inv],
+                  width_bits=120)
 
-        # Twiddle tables (already in [0, q))
-        write_hex(f"tv_rns_hv_twiddles_fwd_lane{lane}.hex", eng._tables)
-        write_hex(f"tv_rns_hv_twiddles_inv_lane{lane}.hex", eng._inv_tables)
+        # Twiddle tables in Montgomery form (tw * R mod q)
+        fwd_mont = [(v * R_mod_q) % q for v in eng._tables]
+        inv_mont = [(v * R_mod_q) % q for v in eng._inv_tables]
+        write_hex(f"tv_rns_hv_twiddles_fwd_lane{lane}.hex", fwd_mont)
+        write_hex(f"tv_rns_hv_twiddles_inv_lane{lane}.hex", inv_mont)
 
         # r polynomial: constant poly [r_scalar % q, 0, 0, ...]
         r_data = [r_scalar % q] + [0] * (n - 1)

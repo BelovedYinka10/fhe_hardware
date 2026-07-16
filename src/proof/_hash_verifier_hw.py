@@ -20,7 +20,7 @@ from he.galois_ring.poly import Poly
 _HERE     = pathlib.Path(__file__).resolve().parent          # proof/
 _LIB_PATH = _HERE.parents[1] / "src" / "rns_hash_verifier_hw.so"
 
-_Q_WIDTH = 60   # must match Verilog compile-time Q_WIDTH
+# Montgomery reduction: R = 2^64, q_neg_inv = -q^{-1} mod R
 
 
 def _load_lib() -> ctypes.CDLL:
@@ -33,7 +33,7 @@ def _load_lib() -> ctypes.CDLL:
     U64P = ctypes.POINTER(ctypes.c_uint64)
 
     # void* rns_hv_new(int n_primes,
-    #                  const uint64_t* qs, n_invs, barrett_ms,
+    #                  const uint64_t* qs, n_invs_mont, q_neg_invs,
     #                  const uint64_t* fwd_tables, inv_tables,
     #                  int n)
     lib.rns_hv_new.restype  = ctypes.c_void_p
@@ -98,12 +98,14 @@ class HW_HashVerifier:
         np_    = len(primes)
         U64    = ctypes.c_uint64
 
-        # Per-lane moduli arrays
-        qs         = (U64 * np_)(*primes)
-        n_invs     = (U64 * np_)(*[int(parms.ntt_engines[p]._n_inv) for p in primes])
-        barrett_ms = (U64 * np_)(*[(1 << (2 * _Q_WIDTH)) // p for p in primes])
+        # Per-lane Montgomery constants — engines already have Montgomery tables
+        # (HW_NTT_Engine stores twiddles as tw*R mod q and n_inv as n_inv*R mod q)
+        R = 1 << 64
+        qs          = (U64 * np_)(*primes)
+        n_invs_mont = (U64 * np_)(*[int(parms.ntt_engines[p]._n_inv_mont) for p in primes])
+        q_neg_invs  = (U64 * np_)(*[((-pow(p, -1, R)) % R) for p in primes])
 
-        # Twiddle tables: layout fwd_flat[lane * n + i], inv_flat[lane * n + i]
+        # Twiddle tables in Montgomery form (already stored that way in HW_NTT_Engine)
         fwd_flat: list[int] = []
         inv_flat: list[int] = []
         for p in primes:
@@ -117,11 +119,11 @@ class HW_HashVerifier:
 
         handle = lib.rns_hv_new(
             np_,
-            ctypes.cast(qs,         ctypes.POINTER(U64)),
-            ctypes.cast(n_invs,     ctypes.POINTER(U64)),
-            ctypes.cast(barrett_ms, ctypes.POINTER(U64)),
-            ctypes.cast(fwd_arr,    ctypes.POINTER(U64)),
-            ctypes.cast(inv_arr,    ctypes.POINTER(U64)),
+            ctypes.cast(qs,          ctypes.POINTER(U64)),
+            ctypes.cast(n_invs_mont, ctypes.POINTER(U64)),
+            ctypes.cast(q_neg_invs,  ctypes.POINTER(U64)),
+            ctypes.cast(fwd_arr,     ctypes.POINTER(U64)),
+            ctypes.cast(inv_arr,     ctypes.POINTER(U64)),
             n,
         )
         if not handle:

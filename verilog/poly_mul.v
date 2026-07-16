@@ -32,8 +32,8 @@ module poly_mul #(
 
     // ── Runtime modulus ─────────────────────────────────────────
     input  wire [Q_WIDTH-1:0]  q,
-    input  wire [Q_WIDTH-1:0]  n_inv,      // N^{-1} mod q for INTT
-    input  wire [2*Q_WIDTH-1:0] barrett_m,  // floor(2^(2·Q_WIDTH) / q)
+    input  wire [Q_WIDTH-1:0]  n_inv,      // N^{-1}·R mod q  (Montgomery form, INTT)
+    input  wire [63:0]         q_neg_inv,  // -q^{-1} mod 2^64  (Montgomery constant)
 
     // ── Operand A write port ─────────────────────────────────────
     input  wire                a_wr_en,
@@ -116,7 +116,7 @@ module poly_mul #(
         .rst_n         (rst_n),
         .q             (q),
         .n_inv         (n_inv),
-        .barrett_m     (barrett_m),
+        .q_neg_inv     (q_neg_inv),
         .coeff_wr_en   (ntt_coeff_wr_en   | a_wr_en | b_wr_en),
         .coeff_wr_addr (ntt_coeff_wr_en ? ntt_coeff_wr_addr :
                         a_wr_en         ? a_wr_addr          :
@@ -139,23 +139,23 @@ module poly_mul #(
     // Expose NTT result RAM to the outside world.
     assign rd_data = ntt_rd_data;
 
-    // ── Modular multiply — Barrett reduction (synthesizable) ─────
+    // ── Modular multiply — Montgomery reduction (pointwise product) ──
+    // Operands must be in Montgomery form: MonPro(a_mont, b_mont) = a·b·R mod q
     function [Q_WIDTH-1:0] mod_mul;
-        input [Q_WIDTH-1:0] a, b, qq;
-        reg [2*Q_WIDTH-1:0] p;
-        reg [4*Q_WIDTH-1:0] pm;
-        reg [Q_WIDTH:0]     t;
-        reg [2*Q_WIDTH-1:0] tq;
-        reg [2*Q_WIDTH-1:0] r;
+        input [Q_WIDTH-1:0] a, b;
+        reg [127:0]     t;
+        reg [63:0]      m;
+        reg [127:0]     mq;
+        reg [128:0]     s;
+        reg [Q_WIDTH:0] u;
         begin
-            p  = a * b;
-            pm = {{(2*Q_WIDTH){1'b0}}, p} * {{(2*Q_WIDTH){1'b0}}, barrett_m};
-            t  = pm[4*Q_WIDTH-1 : 2*Q_WIDTH];
-            tq = t * {1'b0, qq};
-            r  = p - tq;
-            if (r >= {{Q_WIDTH{1'b0}}, qq})
-                r = r - {{Q_WIDTH{1'b0}}, qq};
-            mod_mul = r[Q_WIDTH-1:0];
+            t  = {{(128-Q_WIDTH){1'b0}}, a} * {{(128-Q_WIDTH){1'b0}}, b};
+            m  = t[63:0] * q_neg_inv;
+            mq = {64'b0, m} * {{(128-Q_WIDTH){1'b0}}, q};
+            s  = {1'b0, t} + {1'b0, mq};
+            u  = s[128:64];
+            mod_mul = (u[Q_WIDTH:0] >= {1'b0, q}) ? u[Q_WIDTH-1:0] - q
+                                                   : u[Q_WIDTH-1:0];
         end
     endfunction
 
@@ -187,7 +187,7 @@ module poly_mul #(
         end else begin
             mem_b_we = (state == ST_PROD) && (idx >= 2);
             mem_b_wa = idx[LOGN-1:0] - 2'd2;
-            mem_b_wd = mod_mul(mem_ntt_rd, ntt_rd_data, q);
+            mem_b_wd = mod_mul(mem_ntt_rd, ntt_rd_data);
         end
         mem_b_ra = idx[LOGN-1:0];
     end
