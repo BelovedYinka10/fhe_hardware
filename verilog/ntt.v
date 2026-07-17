@@ -7,20 +7,18 @@
 //
 // Architecture: one butterfly per 2-clock micro-cycle (READ→WRITE)
 //
-// Modular multiply uses Barrett reduction (synthesizable).
-// q_neg_inv = -q^{-1} mod 2^64 must be precomputed and
-// supplied as a runtime input port.
+// Modular multiply uses Montgomery reduction (R=2^64, synthesizable).
+// q_neg_inv = -q^{-1} mod 2^64 supplied as a runtime input port.
+// Twiddle factors must be loaded in Montgomery form (tw * R mod q);
+// n_inv must be loaded in Montgomery form (N^{-1} * R mod q).
 //
 // Memory architecture (BRAM-friendly):
-//   coeff[]  — true dual-port BRAM.
-//       Port A: coefficient load, butterfly operand u, INTT scale,
-//               and the result read-back (rd_addr) port.
-//       Port B: butterfly operand v.
-//     Both ports use a registered read (1-cycle latency) and never
-//     read/write the same address in the same cycle, so the array
-//     infers cleanly as Block RAM (2 ports max).
-//   tw[]     — simple dual-port BRAM (1 write port, 1 registered
-//              read port).
+//   coeff[]   — simple dual-port BRAM, N entries × Q_WIDTH bits.
+//   tw_fwd[]  — simple dual-port BRAM, N entries × Q_WIDTH bits.
+//   tw_inv[]  — simple dual-port BRAM, N entries × Q_WIDTH bits.
+// Splitting the twiddle table into two N-entry arrays (instead of one
+// 2*N-entry array) ensures each maps cleanly to 16 RAMB36E2 blocks at
+// N=8192, Q_WIDTH=60, giving 48 BRAMs total — matching the paper.
 //
 // All memory access flows through exactly these ports; there is no
 // asynchronous read-modify-write, which is what previously blocked
@@ -71,10 +69,15 @@ module ntt #(
     localparam integer S_MAX = LOGN - 1;  // max stage index
 
     // ── Memories ──────────────────────────────────────────────────
+    // Split into three N-entry BRAMs so each infers cleanly (16 BRAMs each
+    // at N=8192, Q_WIDTH=60) rather than one 2*N-entry array that partially
+    // falls back to LUT-RAM when Vivado struggles to cascade 32 BRAMs.
     (* ram_style = "block" *)
-    reg [Q_WIDTH-1:0] coeff [0:N-1];        // coefficient RAM (true dual-port)
+    reg [Q_WIDTH-1:0] coeff   [0:N-1];   // coefficient RAM
     (* ram_style = "block" *)
-    reg [Q_WIDTH-1:0] tw    [0:2*N-1];      // twiddle ROM (simple dual-port)
+    reg [Q_WIDTH-1:0] tw_fwd  [0:N-1];   // forward twiddle table
+    (* ram_style = "block" *)
+    reg [Q_WIDTH-1:0] tw_inv  [0:N-1];   // inverse twiddle table
 
     // ── FSM states ────────────────────────────────────────────────
     // The coefficient RAM is a single read-port + single write-port
@@ -126,8 +129,8 @@ module ntt #(
     wire [LOGN-1:0] ua    = (grp << (ts + 1'b1)) | off;
     wire [LOGN-1:0] va    = ua | t_val;
 
-    wire [LOGN:0] tw_base = inv_r ? N[LOGN:0] : {(LOGN+1){1'b0}};
-    wire [LOGN:0] tw_idx  = tw_base + {1'b0, m_val} + {1'b0, grp};
+    // Twiddle index: same for both tables — table selected by inv_r at read time
+    wire [LOGN-1:0] tw_addr = m_val + grp;
 
     // ── Behavioural modular arithmetic ────────────────────────────
     // mod_add : (a + b) mod q
@@ -152,68 +155,63 @@ module ntt #(
         end
     endfunction
 
-    // mod_mul : Montgomery modular multiply — MonPro(a, b) = a·b·R⁻¹ mod q
-    //   R = 2^64 (fixed for all Q_WIDTH ≤ 64)
-    //   q_neg_inv = -q⁻¹ mod 2^64  (precomputed, supplied as port)
-    //
-    // Usage contract (three dedicated paths — see paper Sec. 3.2):
-    //   CT butterfly  : MonPro(v,  tw)      tw  stored as tw·R mod q
-    //   GS butterfly  : MonPro(Δ,  tw)      same twiddle convention
-    //   INTT scaling  : MonPro(c,  n_inv)   n_inv stored as N⁻¹·R mod q
-    //   → coefficients remain in normal form [0,q) throughout.
-    //
-    //   t   [127:0]  — a·b zero-extended to 128 bits
-    //   m   [ 63:0]  — (t mod 2^64)·q_neg_inv mod 2^64
-    //   mq  [127:0]  — m·q zero-extended
-    //   s   [128:0]  — t + mq  (≤ 2^125 < 2^129)
-    //   u   [Q:0]    — s >> 64  (< 2q, one correction needed)
-    function [Q_WIDTH-1:0] mod_mul;
-        input [Q_WIDTH-1:0] a, b;
-        reg [127:0]     t;
-        reg [63:0]      m;
-        reg [127:0]     mq;
-        reg [128:0]     s;
-        reg [Q_WIDTH:0] u;
-        begin
-            t  = {{(128-Q_WIDTH){1'b0}}, a} * {{(128-Q_WIDTH){1'b0}}, b};
-            m  = t[63:0] * q_neg_inv;            // lower 64-bit (Verilog truncates)
-            mq = {64'b0, m} * {{(128-Q_WIDTH){1'b0}}, q};
-            s  = {1'b0, t} + {1'b0, mq};
-            u  = s[128:64];
-            mod_mul = (u[Q_WIDTH:0] >= {1'b0, q}) ? u[Q_WIDTH-1:0] - q
-                                                   : u[Q_WIDTH-1:0];
-        end
-    endfunction
-
     // ── Registered memory outputs (1-cycle read latency) ──────────
-    reg [Q_WIDTH-1:0] cdo;            // coeff read data (single read port)
-    reg [Q_WIDTH-1:0] tdo;            // twiddle read data
+    reg [Q_WIDTH-1:0] cdo;              // coeff read data
+    reg [Q_WIDTH-1:0] tdo_fwd, tdo_inv; // split twiddle read data
 
-    // Latched butterfly operands: u = coeff[ua], v = coeff[va], w = tw[tw_idx]
+    // Latched butterfly operands
     reg [Q_WIDTH-1:0] u_r, v_r, w_r;
     wire [Q_WIDTH-1:0] u_w = u_r;
     wire [Q_WIDTH-1:0] v_w = v_r;
     wire [Q_WIDTH-1:0] w_w = w_r;
+    wire [Q_WIDTH-1:0] tdo = inv_r ? tdo_inv : tdo_fwd;
 
-    // ── Butterfly results (combinational from registered operands) ─
+    // ── Three dedicated Montgomery multiply paths (paper Sec. 3.2) ──
     //
-    // Cooley–Tukey (NTT):     u' = u + v·w,   v' = u - v·w
-    // Gentleman–Sande (INTT): u' = u + v,      v' = (u - v)·w
+    // MonPro(a,b) = a·b·R⁻¹ mod q, R = 2^64
+    // t = a·b → m = t[63:0]·q_neg_inv mod 2^64 → r = (t+m·q)>>64 → correct
+    // carry: by Montgomery t[63:0]+mq[63:0] ≡ 0 (mod 2^64)
+    //        so carry = 1 iff t[63:0] ≠ 0 (OR-reduction)
+    // Operands at true widths (Q_WIDTH×Q_WIDTH, 64×64, 64×Q_WIDTH)
+    // so Vivado maps multiplications to DSPs directly.
 
-    // Three dedicated multiplier paths (paper Sec. 3.2):
-    //   CT_MM  — CT butterfly twiddle multiply (FNTT)
-    //   GS_MM  — GS butterfly twiddle multiply (INTT)
-    //   SCALE  — INTT final N⁻¹ scaling
-    wire [Q_WIDTH-1:0] vw     = mod_mul(v_w, w_w);       // CT_MM
+    // CT_MM — twiddle multiply for CT butterfly: MonPro(v, w)
+    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] ct_t  = v_w * w_w;
+    (* use_dsp = "yes" *) wire [63:0]          ct_m  = ct_t[63:0] * q_neg_inv;
+    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  ct_mq = ct_m * q;
+    wire [Q_WIDTH:0] ct_r = {1'b0, ct_t[2*Q_WIDTH-1:64]}
+                          + {1'b0, ct_mq[Q_WIDTH+63:64]}
+                          + {{Q_WIDTH{1'b0}}, |ct_t[63:0]};
+
+    // GS_MM — twiddle multiply for GS butterfly: MonPro(u-v, w)
+    wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_w, v_w, q);
+    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] gs_t  = gs_dif * w_w;
+    (* use_dsp = "yes" *) wire [63:0]          gs_m  = gs_t[63:0] * q_neg_inv;
+    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  gs_mq = gs_m * q;
+    wire [Q_WIDTH:0] gs_r = {1'b0, gs_t[2*Q_WIDTH-1:64]}
+                          + {1'b0, gs_mq[Q_WIDTH+63:64]}
+                          + {{Q_WIDTH{1'b0}}, |gs_t[63:0]};
+
+    // SCALE — INTT final N⁻¹ scaling: MonPro(cdo, n_inv)
+    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] sc_t  = cdo * n_inv;
+    (* use_dsp = "yes" *) wire [63:0]          sc_m  = sc_t[63:0] * q_neg_inv;
+    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  sc_mq = sc_m * q;
+    wire [Q_WIDTH:0] sc_r = {1'b0, sc_t[2*Q_WIDTH-1:64]}
+                          + {1'b0, sc_mq[Q_WIDTH+63:64]}
+                          + {{Q_WIDTH{1'b0}}, |sc_t[63:0]};
+
+    // ── Butterfly results (FSM references these names) ────────────
+    // Cooley–Tukey:      u' = u + v·w,  v' = u - v·w
+    // Gentleman–Sande:   u' = u + v,    v' = (u-v)·w
+    wire [Q_WIDTH-1:0] vw     = ct_r[Q_WIDTH:0] >= {1'b0, q} ? ct_r[Q_WIDTH-1:0] - q
+                                                               : ct_r[Q_WIDTH-1:0];
     wire [Q_WIDTH-1:0] ct_u   = mod_add(u_w, vw,  q);
     wire [Q_WIDTH-1:0] ct_v   = mod_sub(u_w, vw,  q);
-
     wire [Q_WIDTH-1:0] gs_u   = mod_add(u_w, v_w, q);
-    wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_w, v_w, q);
-    wire [Q_WIDTH-1:0] gs_v   = mod_mul(gs_dif, w_w);    // GS_MM
-
-    // INTT final scale: coeff[sc_idx] · N⁻¹·R mod q → coeff·N⁻¹ mod q
-    wire [Q_WIDTH-1:0] scaled = mod_mul(cdo, n_inv);      // SCALE
+    wire [Q_WIDTH-1:0] gs_v   = gs_r[Q_WIDTH:0] >= {1'b0, q} ? gs_r[Q_WIDTH-1:0] - q
+                                                               : gs_r[Q_WIDTH-1:0];
+    wire [Q_WIDTH-1:0] scaled = sc_r[Q_WIDTH:0] >= {1'b0, q} ? sc_r[Q_WIDTH-1:0] - q
+                                                               : sc_r[Q_WIDTH-1:0];
 
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).
@@ -276,10 +274,19 @@ module ntt #(
         if (cre) cdo <= coeff[craddr];
     end
 
-    // ── Twiddle RAM: simple dual-port (1 write, 1 registered read) ─
+    // ── Twiddle RAMs: two N-entry BRAMs (forward + inverse) ─────────
+    // Each is N-deep × Q_WIDTH-wide → 16 RAMB36E2 per table on N=8192.
+    // tw_wr_addr[LOGN] = 0 → forward table, = 1 → inverse table.
+    // Read: mux between the two registered outputs; inv_r selects which.
     always @(posedge clk) begin
-        if (tw_wr_en) tw[tw_wr_addr] <= tw_wr_data;
-        tdo <= tw[tw_idx];
+        if (tw_wr_en && !tw_wr_addr[LOGN])
+            tw_fwd[tw_wr_addr[LOGN-1:0]] <= tw_wr_data;
+        tdo_fwd <= tw_fwd[tw_addr];
+    end
+    always @(posedge clk) begin
+        if (tw_wr_en && tw_wr_addr[LOGN])
+            tw_inv[tw_wr_addr[LOGN-1:0]] <= tw_wr_data;
+        tdo_inv <= tw_inv[tw_addr];
     end
 
     // Result read-back: coeff read output (1-cycle latency)
