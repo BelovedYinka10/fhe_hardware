@@ -218,20 +218,25 @@ module ntt #(
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).
     reg [LOGN-1:0]    craddr, cwaddr;
-    reg               cwe;
+    reg               cwe, cre;
     reg [Q_WIDTH-1:0] cwdata;
 
+    // cre gates the read port. It is asserted only in the states that issue a
+    // read, which keeps the write states from reading coeff[ua] while writing
+    // it — a same-address read-during-write that blocks Block RAM inference.
     always @* begin
-        // Defaults: no write; read the u operand address.
+        // Defaults: no write, no read; read the u operand address.
         craddr = ua;
         cwaddr = ua;
         cwe    = 1'b0;
+        cre    = 1'b0;
         cwdata = inv_r ? gs_u : ct_u;
 
         case (state)
             ST_IDLE: begin
                 // Result-poll read; host coefficient load uses write port.
                 craddr = rd_addr;
+                cre    = 1'b1;
                 if (coeff_wr_en) begin
                     cwe    = 1'b1;
                     cwaddr = coeff_wr_addr;
@@ -239,8 +244,8 @@ module ntt #(
                 end
             end
 
-            ST_RD_U: craddr = ua;                    // read u
-            ST_RD_V: craddr = va;                    // read v
+            ST_RD_U: begin craddr = ua; cre = 1'b1; end   // read u
+            ST_RD_V: begin craddr = va; cre = 1'b1; end   // read v
 
             ST_WR_U: begin                           // write u'
                 cwe    = 1'b1;
@@ -253,7 +258,7 @@ module ntt #(
                 cwdata = inv_r ? gs_v : ct_v;
             end
 
-            ST_SCALE_RD: craddr = sc_idx[LOGN-1:0];
+            ST_SCALE_RD: begin craddr = sc_idx[LOGN-1:0]; cre = 1'b1; end
             ST_SCALE_WR: begin
                 cwe    = 1'b1;
                 cwaddr = sc_idx[LOGN-1:0];
@@ -268,7 +273,7 @@ module ntt #(
     // Same template as the twiddle RAM below — infers Block RAM cleanly.
     always @(posedge clk) begin
         if (cwe) coeff[cwaddr] <= cwdata;
-        cdo <= coeff[craddr];
+        if (cre) cdo <= coeff[craddr];
     end
 
     // ── Twiddle RAM: simple dual-port (1 write, 1 registered read) ─
