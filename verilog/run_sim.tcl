@@ -60,7 +60,6 @@ if { [llength $argv] > 0 } {
 set VALID_TOPS {
     tb_rns_hash_verifier
     tb_rns_ntt
-    tb_ntt_mont
     tb_cipher_hash
     tb_hash_verifier
     tb_hash_verifier_schoolbook
@@ -82,7 +81,6 @@ set_property simulator_language Verilog [current_project]
 # ── RTL design sources ────────────────────────────────────────────
 add_files -norecurse [list \
     $VDIR/ntt.v                      \
-    $VDIR/ntt_mont.v                 \
     $VDIR/poly_mul.v                 \
     $VDIR/poly_add.v                 \
     $VDIR/cipher_hash.v              \
@@ -99,7 +97,6 @@ update_compile_order -fileset sources_1
 add_files -fileset sim_1 -norecurse [list \
     $VDIR/tb_rns_hash_verifier.v         \
     $VDIR/tb_rns_ntt.v                   \
-    $VDIR/tb_ntt_mont.v                  \
     $VDIR/tb_cipher_hash.v               \
     $VDIR/tb_hash_verifier.v             \
     $VDIR/tb_hash_verifier_schoolbook.v  \
