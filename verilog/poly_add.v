@@ -47,9 +47,9 @@ module poly_add #(
     localparam integer N = 1 << LOGN;
 
     // ── Coefficient RAMs (Block-RAM friendly) ───────────────────
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_a [0:N-1];
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_b [0:N-1];
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_r [0:N-1];   // result
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_a [0:N-1];
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_b [0:N-1];
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_r [0:N-1];   // result
 
     // ── FSM ──────────────────────────────────────────────────────
     localparam [1:0]
@@ -96,13 +96,17 @@ module poly_add #(
     // ── mem_a: write port + registered read port (simple dual-port) ──
     always @(posedge clk) begin
         if (a_wr_en) mem_a[a_wr_addr] <= a_wr_data;
-        a_rd <= mem_a[radr];
+    end
+    always @(posedge clk) begin
+        if (!a_wr_en) a_rd <= mem_a[radr];
     end
 
     // ── mem_b: write port + registered read port ─────────────────
     always @(posedge clk) begin
         if (b_wr_en) mem_b[b_wr_addr] <= b_wr_data;
-        b_rd <= mem_b[radr];
+    end
+    always @(posedge clk) begin
+        if (!b_wr_en) b_rd <= mem_b[radr];
     end
 
     // ── mem_r: result write port + registered read (output) port ──
@@ -110,7 +114,9 @@ module poly_add #(
         if (wvalid)
             mem_r[widx] <= sub_r ? mod_sub(a_rd, b_rd, q)
                                  : mod_add(a_rd, b_rd, q);
-        rd_data <= mem_r[rd_addr];
+    end
+    always @(posedge clk) begin
+        if (!wvalid) rd_data <= mem_r[rd_addr];
     end
 
     // ── Control FSM (synchronous reset so the RAMs infer Block RAM) ──

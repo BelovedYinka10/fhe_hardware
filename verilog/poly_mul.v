@@ -66,8 +66,8 @@ module poly_mul #(
     // ── Internal coefficient RAMs ────────────────────────────────
     // mem_b  : operand B (loaded), then overwritten with the products.
     // mem_ntt: NTT(A) held while NTT(B) is computed.
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_b   [0:N-1];   // original b / products
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_ntt [0:N-1];   // NTT working buffer
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_b   [0:N-1];   // original b / products
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_ntt [0:N-1];   // NTT working buffer
 
     // mem_ntt dedicated dual-port control + registered read output
     reg                mem_ntt_we;
@@ -171,7 +171,9 @@ module poly_mul #(
 
     always @(posedge clk) begin
         if (mem_ntt_we) mem_ntt[mem_ntt_wa] <= mem_ntt_wd;
-        mem_ntt_rd <= mem_ntt[int_rd_addr];
+    end
+    always @(posedge clk) begin
+        if (!mem_ntt_we) mem_ntt_rd <= mem_ntt[int_rd_addr];
     end
 
     // ── mem_b: dedicated simple-dual-port RAM process ────────────
@@ -194,7 +196,9 @@ module poly_mul #(
 
     always @(posedge clk) begin
         if (mem_b_we) mem_b[mem_b_wa] <= mem_b_wd;
-        ntt_coeff_wr_data <= mem_b[mem_b_ra];
+    end
+    always @(posedge clk) begin
+        if (!mem_b_we) ntt_coeff_wr_data <= mem_b[mem_b_ra];
     end
 
     // ── FSM (synchronous reset; coefficient RAMs are dedicated procs) ──

@@ -82,8 +82,8 @@ module cipher_hash #(
 
     (* ram_style = "ultra" *)
     reg [Q_WIDTH-1:0] ct [0:CT_DEPTH-1];
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_r  [0:N-1];   // r_pow (squared each iter)
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] mem_h  [0:N-1];   // accumulator
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_r  [0:N-1];   // r_pow (squared each iter)
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] mem_h  [0:N-1];   // accumulator
 
     function integer ct_lin;
         input [1:0]      comp;
@@ -249,13 +249,17 @@ module cipher_hash #(
     // ── mem_r RAM: write + registered read ───────────────────────
     always @(posedge clk) begin
         if (memr_we) mem_r[memr_wa] <= memr_wd;
-        memr_rd <= mem_r[memr_ra];
+    end
+    always @(posedge clk) begin
+        if (!memr_we) memr_rd <= mem_r[memr_ra];
     end
 
     // ── mem_h RAM: write + registered read (port A) ──────────────
     always @(posedge clk) begin
         if (memh_we) mem_h[memh_wa] <= memh_wd;
-        memh_rd <= mem_h[memh_ra];
+    end
+    always @(posedge clk) begin
+        if (!memh_we) memh_rd <= mem_h[memh_ra];
     end
 
     // ── Shared data inputs = combinational muxes of read outputs ──

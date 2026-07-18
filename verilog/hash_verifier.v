@@ -99,9 +99,9 @@ module hash_verifier #(
     end
 
     // ── Hash result storage: h1, h2, h3 ─────────────────────────
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] h1 [0:N-1];
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] h2 [0:N-1];
-    (* ram_style = "block" *) reg [Q_WIDTH-1:0] h3 [0:N-1];
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] h1 [0:N-1];
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] h2 [0:N-1];
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *) reg [Q_WIDTH-1:0] h3 [0:N-1];
     reg [Q_WIDTH-1:0] h3_rd;   // registered read of h3 for the compare stage
     // (h3_rd read process is declared below, after pa_rd_addr exists)
 
@@ -242,15 +242,21 @@ module hash_verifier #(
 
     always @(posedge clk) begin
         if (h1_we) h1[h1_wa] <= ch_rd_data;
-        h1_rd <= h1[h1_ra];
+    end
+    always @(posedge clk) begin
+        if (!h1_we) h1_rd <= h1[h1_ra];
     end
     always @(posedge clk) begin
         if (h2_we) h2[h2_wa] <= ch_rd_data;
-        h2_rd <= h2[h2_ra];
+    end
+    always @(posedge clk) begin
+        if (!h2_we) h2_rd <= h2[h2_ra];
     end
     always @(posedge clk) begin
         if (h3_we) h3[h3_wa] <= ch_rd_data;
-        h3_rd <= h3[pa_rd_addr];        // read shares poly_add's rd address
+    end
+    always @(posedge clk) begin
+        if (!h3_we) h3_rd <= h3[pa_rd_addr];
     end
 
     assign pm_a_wr_data = h1_rd;
