@@ -72,8 +72,7 @@ module ntt #(
     // Split into three N-entry BRAMs so each infers cleanly (16 BRAMs each
     // at N=8192, Q_WIDTH=60) rather than one 2*N-entry array that partially
     // falls back to LUT-RAM when Vivado struggles to cascade 32 BRAMs.
-    (* ram_style = "block" *) (* rw_addr_collision = "no" *)
-    reg [Q_WIDTH-1:0] coeff   [0:N-1];   // coefficient RAM
+    // coeff[] replaced by XPM instantiation below — no inference needed
     (* ram_style = "block" *)
     reg [Q_WIDTH-1:0] tw_fwd  [0:N-1];   // forward twiddle table
     (* ram_style = "block" *)
@@ -107,7 +106,7 @@ module ntt #(
     // through cascaded DSP multiplications.  Registering the butterfly
     // and scale outputs one cycle before the write reduces the cone to
     // a single FF output, which the inference engine accepts trivially.
-    reg [Q_WIDTH-1:0] ct_u_r, ct_v_r, gs_u_r, gs_v_r, scaled_r;
+    reg [Q_WIDTH-1:0] mon_result_r;  // registered output of shared Montgomery multiply
 
     // ── Address generation (combinational) ────────────────────────
     //
@@ -165,62 +164,36 @@ module ntt #(
     endfunction
 
     // ── Registered memory outputs (1-cycle read latency) ──────────
-    reg [Q_WIDTH-1:0] cdo;              // coeff read data
+    wire [Q_WIDTH-1:0] cdo;             // coeff read data (driven by XPM)
     reg [Q_WIDTH-1:0] tdo_fwd, tdo_inv; // split twiddle read data
 
     // Latched butterfly operands
     reg [Q_WIDTH-1:0] u_r, v_r, w_r;
-    wire [Q_WIDTH-1:0] u_w = u_r;
-    wire [Q_WIDTH-1:0] v_w = v_r;
-    wire [Q_WIDTH-1:0] w_w = w_r;
     wire [Q_WIDTH-1:0] tdo = inv_r ? tdo_inv : tdo_fwd;
 
-    // ── Three dedicated Montgomery multiply paths (paper Sec. 3.2) ──
+    // ── Shared Montgomery multiply (MonPro) ────────────────────────
+    // CT_MM, GS_MM, and SCALE are mutually exclusive — only one runs
+    // per FSM state — so a single shared datapath replaces three,
+    // cutting DSPs from 96 → 32 and logic LUTs by ~⅔.
     //
-    // MonPro(a,b) = a·b·R⁻¹ mod q, R = 2^64
-    // t = a·b → m = t[63:0]·q_neg_inv mod 2^64 → r = (t+m·q)>>64 → correct
-    // carry: by Montgomery t[63:0]+mq[63:0] ≡ 0 (mod 2^64)
-    //        so carry = 1 iff t[63:0] ≠ 0 (OR-reduction)
-    // Operands at true widths (Q_WIDTH×Q_WIDTH, 64×64, 64×Q_WIDTH)
-    // so Vivado maps multiplications to DSPs directly.
+    // Input mux (combinational):
+    //   butterfly (ST_PIPE):       mon_a = v_r (CT) or u_r−v_r (GS),  mon_b = w_r
+    //   scale     (ST_SCALE_PIPE): mon_a = cdo,                         mon_b = n_inv
+    wire is_scale = (state == ST_SCALE_PIPE);
+    wire [Q_WIDTH-1:0] gs_dif  = mod_sub(u_r, v_r, q);
+    wire [Q_WIDTH-1:0] mon_a   = is_scale ? cdo   : (inv_r ? gs_dif : v_r);
+    wire [Q_WIDTH-1:0] mon_b   = is_scale ? n_inv : w_r;
 
-    // CT_MM — twiddle multiply for CT butterfly: MonPro(v, w)
-    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] ct_t  = v_w * w_w;
-    (* use_dsp = "yes" *) wire [63:0]          ct_m  = ct_t[63:0] * q_neg_inv;
-    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  ct_mq = ct_m * q;
-    wire [Q_WIDTH:0] ct_r = {1'b0, ct_t[2*Q_WIDTH-1:64]}
-                          + {1'b0, ct_mq[Q_WIDTH+63:64]}
-                          + {{Q_WIDTH{1'b0}}, |ct_t[63:0]};
-
-    // GS_MM — twiddle multiply for GS butterfly: MonPro(u-v, w)
-    wire [Q_WIDTH-1:0] gs_dif = mod_sub(u_w, v_w, q);
-    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] gs_t  = gs_dif * w_w;
-    (* use_dsp = "yes" *) wire [63:0]          gs_m  = gs_t[63:0] * q_neg_inv;
-    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  gs_mq = gs_m * q;
-    wire [Q_WIDTH:0] gs_r = {1'b0, gs_t[2*Q_WIDTH-1:64]}
-                          + {1'b0, gs_mq[Q_WIDTH+63:64]}
-                          + {{Q_WIDTH{1'b0}}, |gs_t[63:0]};
-
-    // SCALE — INTT final N⁻¹ scaling: MonPro(cdo, n_inv)
-    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] sc_t  = cdo * n_inv;
-    (* use_dsp = "yes" *) wire [63:0]          sc_m  = sc_t[63:0] * q_neg_inv;
-    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  sc_mq = sc_m * q;
-    wire [Q_WIDTH:0] sc_r = {1'b0, sc_t[2*Q_WIDTH-1:64]}
-                          + {1'b0, sc_mq[Q_WIDTH+63:64]}
-                          + {{Q_WIDTH{1'b0}}, |sc_t[63:0]};
-
-    // ── Butterfly results (FSM references these names) ────────────
-    // Cooley–Tukey:      u' = u + v·w,  v' = u - v·w
-    // Gentleman–Sande:   u' = u + v,    v' = (u-v)·w
-    wire [Q_WIDTH-1:0] vw     = ct_r[Q_WIDTH:0] >= {1'b0, q} ? ct_r[Q_WIDTH-1:0] - q
-                                                               : ct_r[Q_WIDTH-1:0];
-    wire [Q_WIDTH-1:0] ct_u   = mod_add(u_w, vw,  q);
-    wire [Q_WIDTH-1:0] ct_v   = mod_sub(u_w, vw,  q);
-    wire [Q_WIDTH-1:0] gs_u   = mod_add(u_w, v_w, q);
-    wire [Q_WIDTH-1:0] gs_v   = gs_r[Q_WIDTH:0] >= {1'b0, q} ? gs_r[Q_WIDTH-1:0] - q
-                                                               : gs_r[Q_WIDTH-1:0];
-    wire [Q_WIDTH-1:0] scaled = sc_r[Q_WIDTH:0] >= {1'b0, q} ? sc_r[Q_WIDTH-1:0] - q
-                                                               : sc_r[Q_WIDTH-1:0];
+    // MonPro(mon_a, mon_b) = mon_a·mon_b·R⁻¹ mod q,  R = 2^64
+    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] mon_t  = mon_a * mon_b;
+    (* use_dsp = "yes" *) wire [63:0]          mon_m  = mon_t[63:0] * q_neg_inv;
+    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  mon_mq = mon_m * q;
+    wire [Q_WIDTH:0]   mon_r  = {1'b0, mon_t[2*Q_WIDTH-1:64]}
+                               + {1'b0, mon_mq[Q_WIDTH+63:64]}
+                               + {{Q_WIDTH{1'b0}}, |mon_t[63:0]};
+    wire [Q_WIDTH-1:0] mon_result = (mon_r[Q_WIDTH:0] >= {1'b0, q})
+                                    ? mon_r[Q_WIDTH-1:0] - q
+                                    : mon_r[Q_WIDTH-1:0];
 
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).
@@ -232,7 +205,8 @@ module ntt #(
         craddr = ua;
         cwaddr = ua;
         cwe    = 1'b0;
-        cwdata = inv_r ? gs_u_r : ct_u_r;   // registered: trivial cone for BRAM
+        // default: mon_result_r safe while cwe=0
+        cwdata = mon_result_r;
 
         case (state)
             ST_IDLE: begin
@@ -245,24 +219,73 @@ module ntt #(
             end
             ST_RD_U: craddr = ua;
             ST_RD_V: craddr = va;
-            ST_WR_U: begin cwe = 1'b1; cwaddr = ua; cwdata = inv_r ? gs_u_r : ct_u_r; craddr = va; end
-            ST_WR_V: begin cwe = 1'b1; cwaddr = va; cwdata = inv_r ? gs_v_r : ct_v_r; craddr = ua; end
+            // CT: u'= u+vw,  v'= u-vw   (vw = mon_result_r)
+            // GS: u'= u+v,   v'= (u-v)w (gs_v = mon_result_r)
+            ST_WR_U: begin
+                cwe    = 1'b1;
+                cwaddr = ua;
+                cwdata = inv_r ? mod_add(u_r, v_r, q) : mod_add(u_r, mon_result_r, q);
+                craddr = va;
+            end
+            ST_WR_V: begin
+                cwe    = 1'b1;
+                cwaddr = va;
+                cwdata = inv_r ? mon_result_r : mod_sub(u_r, mon_result_r, q);
+                craddr = ua;
+            end
             ST_SCALE_RD: craddr = sc_idx[LOGN-1:0];
-            ST_SCALE_WR: begin cwe = 1'b1; cwaddr = sc_idx[LOGN-1:0]; cwdata = scaled_r; craddr = sc_idx[LOGN-1:0]; end
+            ST_SCALE_WR: begin
+                cwe    = 1'b1;
+                cwaddr = sc_idx[LOGN-1:0];
+                cwdata = mon_result_r;
+                craddr = sc_idx[LOGN-1:0];
+            end
             default: ;
         endcase
     end
 
-    // ── Coefficient RAM: separate write and read always blocks ────────
-    // Vivado BRAM inference is most reliable when write and read are in
-    // separate processes. Read is ungated — cdo is only consumed in states
-    // that issued a read the previous cycle, so stale reads are harmless.
-    always @(posedge clk) begin
-        if (cwe) coeff[cwaddr] <= cwdata;
-    end
-    always @(posedge clk) begin
-        if (!cwe) cdo <= coeff[craddr];
-    end
+    // ── Coefficient RAM: XPM SDP block RAM ───────────────────────────
+    // xpm_memory_sdpram guarantees RAMB36E2 placement — no inference
+    // uncertainty, no LUTRAM fallback regardless of write-data cone depth.
+    // WRITE_MODE_B = no_change: doutb held during writes (matches FSM).
+    // READ_LATENCY_B = 1: one registered clock from addrb to doutb.
+    xpm_memory_sdpram #(
+        .ADDR_WIDTH_A       (LOGN),
+        .ADDR_WIDTH_B       (LOGN),
+        .BYTE_WRITE_WIDTH_A (Q_WIDTH),
+        .CLOCKING_MODE      ("common_clock"),
+        .MEMORY_PRIMITIVE   ("block"),
+        .MEMORY_SIZE        (N * Q_WIDTH),
+        .READ_DATA_WIDTH_B  (Q_WIDTH),
+        .READ_LATENCY_B     (1),
+        .WRITE_DATA_WIDTH_A (Q_WIDTH),
+        .WRITE_MODE_B       ("no_change"),
+        .ECC_MODE           ("no_ecc"),
+        .USE_MEM_INIT       (0),
+        .AUTO_SLEEP_TIME    (0),
+        .MESSAGE_CONTROL    (0),
+        .SIM_ASSERT_CHK     (0),
+        .RST_MODE_A         ("SYNC"),
+        .RST_MODE_B         ("SYNC"),
+        .WAKEUP_TIME        ("disable_sleep")
+    ) u_coeff_mem (
+        .clka           (clk),
+        .ena            (cwe),
+        .wea            (1'b1),
+        .addra          (cwaddr),
+        .dina           (cwdata),
+        .clkb           (clk),
+        .enb            (!cwe),
+        .addrb          (craddr),
+        .doutb          (cdo),
+        .injectsbiterra (1'b0),
+        .injectdbiterra (1'b0),
+        .regceb         (1'b0),
+        .rstb           (1'b0),
+        .sleep          (1'b0),
+        .sbiterrb       (),
+        .dbiterrb       ()
+    );
 
     // ── Twiddle RAMs: separate write and read always blocks ───────────
     // Four always blocks (write + read for each of tw_fwd and tw_inv)
@@ -325,13 +348,11 @@ module ntt #(
                     state <= ST_PIPE;
                 end
 
-                // ── Register butterfly results (u_r/v_r/w_r settled) ─
+                // ── Run shared Montgomery multiply, latch result ──────
+                // mon_a/mon_b are combinational from settled u_r/v_r/w_r.
                 ST_PIPE: begin
-                    ct_u_r <= ct_u;
-                    ct_v_r <= ct_v;
-                    gs_u_r <= gs_u;
-                    gs_v_r <= gs_v;
-                    state  <= ST_WR_U;
+                    mon_result_r <= mon_result;
+                    state        <= ST_WR_U;
                 end
 
                 // ── Write coeff[ua] = u' ──────────────────────────
@@ -358,10 +379,10 @@ module ntt #(
                 // ── INTT final scale: issue read of coeff[sc_idx] ─
                 ST_SCALE_RD: state <= ST_SCALE_PIPE;
 
-                // ── Register scale result (cdo settled from SCALE_RD) ─
+                // ── Run shared Montgomery multiply for scale, latch ───
                 ST_SCALE_PIPE: begin
-                    scaled_r <= scaled;
-                    state    <= ST_SCALE_WR;
+                    mon_result_r <= mon_result;
+                    state        <= ST_SCALE_WR;
                 end
 
                 // ── INTT final scale: write coeff[sc_idx]*n_inv ───
