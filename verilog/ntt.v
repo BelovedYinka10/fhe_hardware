@@ -72,7 +72,7 @@ module ntt #(
     // Split into three N-entry BRAMs so each infers cleanly (16 BRAMs each
     // at N=8192, Q_WIDTH=60) rather than one 2*N-entry array that partially
     // falls back to LUT-RAM when Vivado struggles to cascade 32 BRAMs.
-    (* ram_style = "block" *) (* write_mode = "no_change" *)
+    (* ram_style = "block" *) (* rw_addr_collision = "no" *)
     reg [Q_WIDTH-1:0] coeff   [0:N-1];   // coefficient RAM
     (* ram_style = "block" *)
     reg [Q_WIDTH-1:0] tw_fwd  [0:N-1];   // forward twiddle table
@@ -252,7 +252,7 @@ module ntt #(
         if (cwe) coeff[cwaddr] <= cwdata;
     end
     always @(posedge clk) begin
-        cdo <= coeff[craddr];
+        if (!cwe) cdo <= coeff[craddr];
     end
 
     // ── Twiddle RAMs: separate write and read always blocks ───────────
