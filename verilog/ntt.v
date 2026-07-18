@@ -84,21 +84,30 @@ module ntt #(
     // (simple dual-port) Block RAM, so each butterfly serialises its two
     // reads and two writes across separate cycles.
     localparam [3:0]
-        ST_IDLE     = 4'd0,
-        ST_RD_U     = 4'd1,   // issue read of coeff[ua] (+ tw[tw_idx])
-        ST_RD_V     = 4'd2,   // latch u,w; issue read of coeff[va]
-        ST_CALC     = 4'd3,   // latch v; butterfly result now valid
-        ST_WR_U     = 4'd4,   // write coeff[ua] = u'
-        ST_WR_V     = 4'd5,   // write coeff[va] = v'; advance counters
-        ST_SCALE_RD = 4'd6,   // INTT: issue read of coeff[sc_idx]
-        ST_SCALE_WR = 4'd7,   // INTT: write coeff[sc_idx] * n_inv
-        ST_DONE     = 4'd8;
+        ST_IDLE       = 4'd0,
+        ST_RD_U       = 4'd1,   // issue read of coeff[ua] (+ tw[tw_idx])
+        ST_RD_V       = 4'd2,   // latch u,w; issue read of coeff[va]
+        ST_CALC       = 4'd3,   // latch v; butterfly result valid after this
+        ST_PIPE       = 4'd9,   // register butterfly results (breaks DSP cone)
+        ST_WR_U       = 4'd4,   // write coeff[ua] = u'
+        ST_WR_V       = 4'd5,   // write coeff[va] = v'; advance counters
+        ST_SCALE_RD   = 4'd6,   // INTT: issue read of coeff[sc_idx]
+        ST_SCALE_PIPE = 4'd10,  // register scale result (breaks DSP cone)
+        ST_SCALE_WR   = 4'd7,   // INTT: write coeff[sc_idx] * n_inv
+        ST_DONE       = 4'd8;
 
     reg [3:0]        state;
     reg [LOGN-1:0]   stage;     // current stage 0..LOGN-1
     reg [LOGN-1:0]   k;         // butterfly index within stage 0..N/2-1
     reg              inv_r;     // latched inverse flag
     reg [LOGN:0]     sc_idx;    // scale counter 0..N
+
+    // ── Pipeline registers — break the DSP→BRAM write-data cone ──────
+    // Vivado's BRAM inference aborts when the write-data cone passes
+    // through cascaded DSP multiplications.  Registering the butterfly
+    // and scale outputs one cycle before the write reduces the cone to
+    // a single FF output, which the inference engine accepts trivially.
+    reg [Q_WIDTH-1:0] ct_u_r, ct_v_r, gs_u_r, gs_v_r, scaled_r;
 
     // ── Address generation (combinational) ────────────────────────
     //
@@ -223,7 +232,7 @@ module ntt #(
         craddr = ua;
         cwaddr = ua;
         cwe    = 1'b0;
-        cwdata = inv_r ? gs_u : ct_u;
+        cwdata = inv_r ? gs_u_r : ct_u_r;   // registered: trivial cone for BRAM
 
         case (state)
             ST_IDLE: begin
@@ -236,10 +245,10 @@ module ntt #(
             end
             ST_RD_U: craddr = ua;
             ST_RD_V: craddr = va;
-            ST_WR_U: begin cwe = 1'b1; cwaddr = ua; cwdata = inv_r ? gs_u : ct_u; craddr = va; end
-            ST_WR_V: begin cwe = 1'b1; cwaddr = va; cwdata = inv_r ? gs_v : ct_v; craddr = ua; end
+            ST_WR_U: begin cwe = 1'b1; cwaddr = ua; cwdata = inv_r ? gs_u_r : ct_u_r; craddr = va; end
+            ST_WR_V: begin cwe = 1'b1; cwaddr = va; cwdata = inv_r ? gs_v_r : ct_v_r; craddr = ua; end
             ST_SCALE_RD: craddr = sc_idx[LOGN-1:0];
-            ST_SCALE_WR: begin cwe = 1'b1; cwaddr = sc_idx[LOGN-1:0]; cwdata = scaled; craddr = sc_idx[LOGN-1:0]; end
+            ST_SCALE_WR: begin cwe = 1'b1; cwaddr = sc_idx[LOGN-1:0]; cwdata = scaled_r; craddr = sc_idx[LOGN-1:0]; end
             default: ;
         endcase
     end
@@ -310,10 +319,19 @@ module ntt #(
                     state <= ST_CALC;
                 end
 
-                // ── Latch v; butterfly result valid next cycle ────
+                // ── Latch v; go to pipeline stage ────────────────
                 ST_CALC: begin
                     v_r   <= cdo;     // cdo = coeff[va]
-                    state <= ST_WR_U;
+                    state <= ST_PIPE;
+                end
+
+                // ── Register butterfly results (u_r/v_r/w_r settled) ─
+                ST_PIPE: begin
+                    ct_u_r <= ct_u;
+                    ct_v_r <= ct_v;
+                    gs_u_r <= gs_u;
+                    gs_v_r <= gs_v;
+                    state  <= ST_WR_U;
                 end
 
                 // ── Write coeff[ua] = u' ──────────────────────────
@@ -338,7 +356,13 @@ module ntt #(
                 end
 
                 // ── INTT final scale: issue read of coeff[sc_idx] ─
-                ST_SCALE_RD: state <= ST_SCALE_WR;
+                ST_SCALE_RD: state <= ST_SCALE_PIPE;
+
+                // ── Register scale result (cdo settled from SCALE_RD) ─
+                ST_SCALE_PIPE: begin
+                    scaled_r <= scaled;
+                    state    <= ST_SCALE_WR;
+                end
 
                 // ── INTT final scale: write coeff[sc_idx]*n_inv ───
                 ST_SCALE_WR: begin
