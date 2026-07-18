@@ -72,7 +72,7 @@ module ntt #(
     // Split into three N-entry BRAMs so each infers cleanly (16 BRAMs each
     // at N=8192, Q_WIDTH=60) rather than one 2*N-entry array that partially
     // falls back to LUT-RAM when Vivado struggles to cascade 32 BRAMs.
-    (* ram_style = "block" *)
+    (* ram_style = "block" *) (* write_mode = "no_change" *)
     reg [Q_WIDTH-1:0] coeff   [0:N-1];   // coefficient RAM
     (* ram_style = "block" *)
     reg [Q_WIDTH-1:0] tw_fwd  [0:N-1];   // forward twiddle table
@@ -216,76 +216,61 @@ module ntt #(
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).
     reg [LOGN-1:0]    craddr, cwaddr;
-    reg               cwe, cre;
+    reg               cwe;
     reg [Q_WIDTH-1:0] cwdata;
 
-    // cre gates the read port. It is asserted only in the states that issue a
-    // read, which keeps the write states from reading coeff[ua] while writing
-    // it — a same-address read-during-write that blocks Block RAM inference.
     always @* begin
-        // Defaults: no write, no read; read the u operand address.
         craddr = ua;
         cwaddr = ua;
         cwe    = 1'b0;
-        cre    = 1'b0;
         cwdata = inv_r ? gs_u : ct_u;
 
         case (state)
             ST_IDLE: begin
-                // Result-poll read; host coefficient load uses write port.
                 craddr = rd_addr;
-                cre    = 1'b1;
                 if (coeff_wr_en) begin
                     cwe    = 1'b1;
                     cwaddr = coeff_wr_addr;
                     cwdata = coeff_wr_data;
                 end
             end
-
-            ST_RD_U: begin craddr = ua; cre = 1'b1; end   // read u
-            ST_RD_V: begin craddr = va; cre = 1'b1; end   // read v
-
-            ST_WR_U: begin                           // write u'
-                cwe    = 1'b1;
-                cwaddr = ua;
-                cwdata = inv_r ? gs_u : ct_u;
-            end
-            ST_WR_V: begin                           // write v'
-                cwe    = 1'b1;
-                cwaddr = va;
-                cwdata = inv_r ? gs_v : ct_v;
-            end
-
-            ST_SCALE_RD: begin craddr = sc_idx[LOGN-1:0]; cre = 1'b1; end
-            ST_SCALE_WR: begin
-                cwe    = 1'b1;
-                cwaddr = sc_idx[LOGN-1:0];
-                cwdata = scaled;
-            end
-
+            ST_RD_U: craddr = ua;
+            ST_RD_V: craddr = va;
+            ST_WR_U: begin cwe = 1'b1; cwaddr = ua; cwdata = inv_r ? gs_u : ct_u; craddr = va; end
+            ST_WR_V: begin cwe = 1'b1; cwaddr = va; cwdata = inv_r ? gs_v : ct_v; craddr = ua; end
+            ST_SCALE_RD: craddr = sc_idx[LOGN-1:0];
+            ST_SCALE_WR: begin cwe = 1'b1; cwaddr = sc_idx[LOGN-1:0]; cwdata = scaled; craddr = sc_idx[LOGN-1:0]; end
             default: ;
         endcase
     end
 
-    // ── Coefficient RAM: simple dual-port (1 write, 1 registered read) ─
-    // Same template as the twiddle RAM below — infers Block RAM cleanly.
+    // ── Coefficient RAM: separate write and read always blocks ────────
+    // Vivado BRAM inference is most reliable when write and read are in
+    // separate processes. Read is ungated — cdo is only consumed in states
+    // that issued a read the previous cycle, so stale reads are harmless.
     always @(posedge clk) begin
         if (cwe) coeff[cwaddr] <= cwdata;
-        if (cre) cdo <= coeff[craddr];
+    end
+    always @(posedge clk) begin
+        cdo <= coeff[craddr];
     end
 
-    // ── Twiddle RAMs: two N-entry BRAMs (forward + inverse) ─────────
-    // Each is N-deep × Q_WIDTH-wide → 16 RAMB36E2 per table on N=8192.
-    // tw_wr_addr[LOGN] = 0 → forward table, = 1 → inverse table.
-    // Read: mux between the two registered outputs; inv_r selects which.
+    // ── Twiddle RAMs: separate write and read always blocks ───────────
+    // Four always blocks (write + read for each of tw_fwd and tw_inv)
+    // gives Vivado the clearest possible SDP-BRAM inference signal.
     always @(posedge clk) begin
         if (tw_wr_en && !tw_wr_addr[LOGN])
             tw_fwd[tw_wr_addr[LOGN-1:0]] <= tw_wr_data;
+    end
+    always @(posedge clk) begin
         tdo_fwd <= tw_fwd[tw_addr];
     end
+
     always @(posedge clk) begin
         if (tw_wr_en && tw_wr_addr[LOGN])
             tw_inv[tw_wr_addr[LOGN-1:0]] <= tw_wr_data;
+    end
+    always @(posedge clk) begin
         tdo_inv <= tw_inv[tw_addr];
     end
 
