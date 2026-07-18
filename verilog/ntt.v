@@ -83,17 +83,21 @@ module ntt #(
     // (simple dual-port) Block RAM, so each butterfly serialises its two
     // reads and two writes across separate cycles.
     localparam [3:0]
-        ST_IDLE       = 4'd0,
-        ST_RD_U       = 4'd1,   // issue read of coeff[ua] (+ tw[tw_idx])
-        ST_RD_V       = 4'd2,   // latch u,w; issue read of coeff[va]
-        ST_CALC       = 4'd3,   // latch v; butterfly result valid after this
-        ST_PIPE       = 4'd9,   // register butterfly results (breaks DSP cone)
-        ST_WR_U       = 4'd4,   // write coeff[ua] = u'
-        ST_WR_V       = 4'd5,   // write coeff[va] = v'; advance counters
-        ST_SCALE_RD   = 4'd6,   // INTT: issue read of coeff[sc_idx]
-        ST_SCALE_PIPE = 4'd10,  // register scale result (breaks DSP cone)
-        ST_SCALE_WR   = 4'd7,   // INTT: write coeff[sc_idx] * n_inv
-        ST_DONE       = 4'd8;
+        ST_IDLE         = 4'd0,
+        ST_RD_U         = 4'd1,   // issue read of coeff[ua] (+ tw[tw_idx])
+        ST_RD_V         = 4'd2,   // latch u,w; issue read of coeff[va]
+        ST_CALC         = 4'd3,   // latch v; butterfly result valid after this
+        ST_PIPE         = 4'd9,   // pipeline stage 1: latch s1_mon_t
+        ST_PIPE2        = 4'd11,  // pipeline stage 2: latch s2_mon_m / s2_mon_t
+        ST_PIPE3        = 4'd12,  // pipeline stage 3: latch mon_result_r
+        ST_WR_U         = 4'd4,   // write coeff[ua] = u'
+        ST_WR_V         = 4'd5,   // write coeff[va] = v'; advance counters
+        ST_SCALE_RD     = 4'd6,   // INTT: issue read of coeff[sc_idx]
+        ST_SCALE_PIPE   = 4'd10,  // scale pipeline stage 1: latch s1_mon_t
+        ST_SCALE_PIPE2  = 4'd13,  // scale pipeline stage 2: latch s2_mon_m / s2_mon_t
+        ST_SCALE_PIPE3  = 4'd14,  // scale pipeline stage 3: latch mon_result_r
+        ST_SCALE_WR     = 4'd7,   // INTT: write coeff[sc_idx] * n_inv
+        ST_DONE         = 4'd8;
 
     reg [3:0]        state;
     reg [LOGN-1:0]   stage;     // current stage 0..LOGN-1
@@ -106,7 +110,13 @@ module ntt #(
     // through cascaded DSP multiplications.  Registering the butterfly
     // and scale outputs one cycle before the write reduces the cone to
     // a single FF output, which the inference engine accepts trivially.
-    reg [Q_WIDTH-1:0] mon_result_r;  // registered output of shared Montgomery multiply
+    // ── 3-stage Montgomery pipeline registers ─────────────────────────
+    // Breaking the chain at each DSP multiply stage lets each stage fit
+    // within one clock period, targeting ~150-200 MHz vs ~38 MHz flat.
+    reg [2*Q_WIDTH-1:0] s1_mon_t;    // stage 1 out: mon_a * mon_b
+    reg [63:0]          s2_mon_m;    // stage 2 out: s1_mon_t[63:0] * q_neg_inv
+    reg [2*Q_WIDTH-1:0] s2_mon_t;    // stage 2 carry: s1_mon_t passed through
+    reg [Q_WIDTH-1:0]   mon_result_r; // stage 3 out: final reduced result
 
     // ── Address generation (combinational) ────────────────────────
     //
@@ -184,16 +194,21 @@ module ntt #(
     wire [Q_WIDTH-1:0] mon_a   = is_scale ? cdo   : (inv_r ? gs_dif : v_r);
     wire [Q_WIDTH-1:0] mon_b   = is_scale ? n_inv : w_r;
 
-    // MonPro(mon_a, mon_b) = mon_a·mon_b·R⁻¹ mod q,  R = 2^64
-    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] mon_t  = mon_a * mon_b;
-    (* use_dsp = "yes" *) wire [63:0]          mon_m  = mon_t[63:0] * q_neg_inv;
-    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  mon_mq = mon_m * q;
-    wire [Q_WIDTH:0]   mon_r  = {1'b0, mon_t[2*Q_WIDTH-1:64]}
-                               + {1'b0, mon_mq[Q_WIDTH+63:64]}
-                               + {{Q_WIDTH{1'b0}}, |mon_t[63:0]};
-    wire [Q_WIDTH-1:0] mon_result = (mon_r[Q_WIDTH:0] >= {1'b0, q})
-                                    ? mon_r[Q_WIDTH-1:0] - q
-                                    : mon_r[Q_WIDTH-1:0];
+    // ── MonPro pipelined across 3 stages ──────────────────────────────
+    // Stage 1 (combinational — registered into s1_mon_t in ST_PIPE/SCALE_PIPE)
+    (* use_dsp = "yes" *) wire [2*Q_WIDTH-1:0] mon_t_c  = mon_a * mon_b;
+
+    // Stage 2 (combinational — inputs from s1_mon_t, registered into s2_mon_m/t)
+    (* use_dsp = "yes" *) wire [63:0]          mon_m_c  = s1_mon_t[63:0] * q_neg_inv;
+
+    // Stage 3 (combinational — inputs from s2_mon_m/t, result goes to mon_result_r)
+    (* use_dsp = "yes" *) wire [Q_WIDTH+63:0]  mon_mq_c = s2_mon_m * q;
+    wire [Q_WIDTH:0]   mon_r_c = {1'b0, s2_mon_t[2*Q_WIDTH-1:64]}
+                                + {1'b0, mon_mq_c[Q_WIDTH+63:64]}
+                                + {{Q_WIDTH{1'b0}}, |s2_mon_t[63:0]};
+    wire [Q_WIDTH-1:0] mon_result_c = (mon_r_c[Q_WIDTH:0] >= {1'b0, q})
+                                      ? mon_r_c[Q_WIDTH-1:0] - q
+                                      : mon_r_c[Q_WIDTH-1:0];
 
     // ── Coefficient memory port control (combinational mux) ───────
     // One read port (craddr → cdo) and one write port (cwaddr/cwdata/cwe).
@@ -348,10 +363,22 @@ module ntt #(
                     state <= ST_PIPE;
                 end
 
-                // ── Run shared Montgomery multiply, latch result ──────
-                // mon_a/mon_b are combinational from settled u_r/v_r/w_r.
+                // ── Stage 1: latch mon_a * mon_b ─────────────────────
                 ST_PIPE: begin
-                    mon_result_r <= mon_result;
+                    s1_mon_t <= mon_t_c;
+                    state    <= ST_PIPE2;
+                end
+
+                // ── Stage 2: latch s1*q_neg_inv, carry s1 forward ────
+                ST_PIPE2: begin
+                    s2_mon_m <= mon_m_c;
+                    s2_mon_t <= s1_mon_t;
+                    state    <= ST_PIPE3;
+                end
+
+                // ── Stage 3: latch final reduced result ───────────────
+                ST_PIPE3: begin
+                    mon_result_r <= mon_result_c;
                     state        <= ST_WR_U;
                 end
 
@@ -379,9 +406,22 @@ module ntt #(
                 // ── INTT final scale: issue read of coeff[sc_idx] ─
                 ST_SCALE_RD: state <= ST_SCALE_PIPE;
 
-                // ── Run shared Montgomery multiply for scale, latch ───
+                // ── Scale stage 1: latch cdo * n_inv ─────────────────
                 ST_SCALE_PIPE: begin
-                    mon_result_r <= mon_result;
+                    s1_mon_t <= mon_t_c;
+                    state    <= ST_SCALE_PIPE2;
+                end
+
+                // ── Scale stage 2 ─────────────────────────────────────
+                ST_SCALE_PIPE2: begin
+                    s2_mon_m <= mon_m_c;
+                    s2_mon_t <= s1_mon_t;
+                    state    <= ST_SCALE_PIPE3;
+                end
+
+                // ── Scale stage 3: latch final result ─────────────────
+                ST_SCALE_PIPE3: begin
+                    mon_result_r <= mon_result_c;
                     state        <= ST_SCALE_WR;
                 end
 
